@@ -4,5 +4,7 @@
 #include "model.hpp"
 #include "gibbs.hpp"
 
+using namespace std;
+
 #endif // !INFERENCE_HPP
 

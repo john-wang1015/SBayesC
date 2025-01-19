@@ -4,50 +4,44 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <iostream>
 #include <stdexcept>
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
+
+using namespace Eigen;
+using namespace std;
+
+class SnpInfo{
+    public:
+        const string ID;
+        const int chrom;
+        const int GenPos;
+        const int PhysPos;
+        const string A1;
+        const string A2;
+        const float A1Freq;
+        const int Index;
+        
+};
 
 class readFile {
-public:
-    void readBinFullLD(const std::string& filePath);
-    void readSummary(const std::string& filePath);
-    void readBinSparseLD();
-    void readBinShrukLD();
+    public:
+        unsigned numSNP;
+
+        MatrixXf XTX;       // X'X matrix
+        MatrixXf XTy;       // X'y matrix
+        MatrixXf Ddiag;     // diag matrix need to be approximated
+        MatrixXf B;         // LD matrix
+        VectorXf b;         // estimated marginal effect, i.e., b_hat
+        VectorXf se;        // standard error for b_hat
+        VectorXd n;         // sample size
+
+        void readSummary(const std::string& summaryFilePath);
+        void readBinInfo(const std::string& binInfoFilePath);
+        void readBinFullLD(const std::string& binFilePath);
+        void readBinSparseLD(const std::string& binFilePath);                                     
+        void readBinShrunkLD(const std::string& binFilePath);                                      
 };
-
-class BinaryFileReader {
-public:
-    BinaryFileReader(const std::string& filePath);
-
-    std::vector<char> readAll(); // Reads all data into a buffer
-
-    template <typename T>
-    std::vector<T> readAsType(); // Reads binary data as a specific type
-
-private:
-    std::string filePath;
-};
-
-// Inline implementation of readAsType<T>()
-template <typename T>
-std::vector<T> BinaryFileReader::readAsType() {
-    std::ifstream file(filePath, std::ios::binary | std::ios::in);
-    if (!file) {
-        throw std::runtime_error("Failed to open file: " + filePath);
-    }
-
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    if (size % sizeof(T) != 0) {
-        throw std::runtime_error("File size is not a multiple of type size");
-    }
-
-    std::vector<T> buffer(size / sizeof(T));
-    if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
-        throw std::runtime_error("Failed to read file as type: " + filePath);
-    }
-
-    return buffer;
-}
 
 #endif // DATA_HPP
