@@ -51,6 +51,13 @@ class Model {
 //}
 
 class SBayesC: public Model{
+    public:
+        class fixedEffect: public ParamSet, public Stat::Flat{
+            public:
+
+                void fullConditional();
+                void gradient();
+        };
 
 };
 
