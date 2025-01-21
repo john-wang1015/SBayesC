@@ -47,17 +47,46 @@ class Model {
         virtual void sampleStartVal(void) = 0;
     };
 
-//class BayesC: public Model{
-//}
 
 class SBayesC: public Model{
     public:
-        class fixedEffect: public ParamSet, public Stat::Flat{
+        class SNPEffect: public ParamSet{
+            // SNP effect beta_j
             public:
 
                 void fullConditional();
                 void gradient();
         };
+
+        class Pi: public Parameter, public Stat::Beta{
+            // mixture component, pi
+            public:
+
+                void update();
+        };
+
+        class SNPEffectVar: public Parameter, public Stat::InvChiSq{
+            // sigma_beta^2
+            public:
+
+                void sampleFromPrior();
+                void fullConditional();
+                void gradient();
+        };
+
+        class residualVar: public Parameter, public Stat::InvChiSq{
+            // sigma_epsilon^2
+            public:
+
+                void sampleFromPrior();
+                void fullConditional();
+                void gradient();
+        };
+
+    public:
+        const readFile &data;
+        
+
 
 };
 

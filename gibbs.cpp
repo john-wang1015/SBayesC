@@ -1,5 +1,13 @@
 #include "gibbs.hpp"
 
+void samples::transformation(){
+
+}
+
+void samples::invTransformation(){
+    
+}
+
 // Constructor implementation
 gibbsHMCSampler::gibbsHMCSampler(
     unsigned chainLength, 
