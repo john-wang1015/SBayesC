@@ -8,6 +8,7 @@
 #include "data.hpp"
 
 using namespace std;
+using namespace Eigen;
 
 class Parameter {
     // base class for a single parameter
@@ -50,11 +51,11 @@ class Model {
 
 class SBayesC: public Model{
     public:
-        class SNPEffect: public ParamSet{
+        class SNPEffect: public ParamSet, public Stat::Normal{
             // SNP effect beta_j
             public:
 
-                void fullConditional();
+                void fullConditional(const VectorXf &r_adjust, const float sigma_e, const float sigma_beta, const MatrixXf XTX, const int j_index, VectorXf beta_current);
                 void gradient();
         };
 
@@ -85,7 +86,9 @@ class SBayesC: public Model{
 
     public:
         const readFile &data;
-        
+        VectorXf beta_current; // store current state for beta values
+        MatrixXf beta_history; // store all beta values
+
 
 
 };
