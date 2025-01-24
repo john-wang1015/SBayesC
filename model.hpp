@@ -55,7 +55,7 @@ class SBayesC: public Model{
             // SNP effect beta_j
             public:
 
-                void fullConditional(const VectorXf &r_adjust, const float sigma_e, const float sigma_beta, const MatrixXf XTX, const int j_index, VectorXf beta_current);
+                void fullConditional(const VectorXf &r_adjust, const float sigma_e, const float sigma_beta, const MatrixXf XTX, VectorXf &beta_current);
                 void gradient();
         };
 
@@ -88,6 +88,7 @@ class SBayesC: public Model{
         const readFile &data;
         VectorXf beta_current; // store current state for beta values
         MatrixXf beta_history; // store all beta values
+        VectorXf r_adjust; 
 
 
 
