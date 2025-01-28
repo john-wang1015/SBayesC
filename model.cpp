@@ -1,5 +1,34 @@
 #include "model.hpp"
 
+using namespace Eigen;
+using namespace std;
+
+void BayesC::reconstruction::approximateD(const Data &data, const VectorXf &se, const VectorXf &bhat, const VectorXf &n){
+    unsigned n_size = data.numSNP;
+    cout << "number of sample: " << n_size << endl;
+    VectorXf diagonalElements(n_size);
+
+    for (unsigned j = 0; j < n_size; ++j) {
+        diagonalElements[j] = 1.0f / (se[j] + (bhat[j] * bhat[j] / n[j]));
+    }
+
+    D = diagonalElements.asDiagonal();
+};
+
+void BayesC::reconstruction::buildXTX(const MatrixXf &B, Data &data){
+    MatrixXf D_sqrt = D.cwiseSqrt();
+    data.XTX = D_sqrt * B * D_sqrt;
+};
+
+void BayesC::reconstruction::buildXTy(const MatrixXf &bhat, Data &data){
+    data.XTy = D * bhat;
+};
+
+void BayesC::SNPEffect::sampleFromPrior(){
+    
+
+};
+
 void SBayesC::SNPEffect::fullConditional(const VectorXf &r_adjust,const MatrixXf XTX, VectorXf &beta_current, const float sigma_e, const float sigma_beta){
     /*
         function of funll conditional probability for beta_j
@@ -14,7 +43,7 @@ void SBayesC::SNPEffect::fullConditional(const VectorXf &r_adjust,const MatrixXf
         beta_current[i] = Stat::Normal::sample(mean_j, stddev_j);
     }
 
-}
+};
 
 void SBayesC::SNPEffect::gradient(){
     /*

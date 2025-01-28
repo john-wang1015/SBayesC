@@ -49,6 +49,51 @@ class Model {
     };
 
 
+class BayesC : public Model {
+    public:
+        class reconstruction{
+            public:
+                MatrixXf D;
+
+                void approximateD(const Data &data, const VectorXf &se, const VectorXf &bhat, const VectorXf &n);
+                void buildXTX(const MatrixXf &B, Data &data);
+                void buildXTy(const MatrixXf &bhat, Data &data);
+        };
+
+        class SNPEffect: public ParamSet, public Stat::Normal {
+            public:
+
+                void sampleFromPrior();
+                void fullconditional();
+                void gradient();
+        };
+
+        class Pi: public Parameter, public Stat::Beta{
+            
+            public:
+
+                void fullconditional();
+                void gradient();
+        };
+
+    public:
+        const Data &data;
+
+
+
+};
+
+class BayesC_adj_prior : public BayesC {
+    public:
+        class SNPEffect : public BayesC::SNPEffect {
+            public:
+            
+        };
+
+
+};
+
+
 class SBayesC: public Model{
     public:
         class SNPEffect: public ParamSet, public Stat::Normal{
@@ -85,7 +130,7 @@ class SBayesC: public Model{
         };
 
     public:
-        const readFile &data;
+        const Data &data;
         VectorXf beta_current; // store current state for beta values
         MatrixXf beta_history; // store all beta values
         VectorXf r_adjust; 
@@ -94,4 +139,4 @@ class SBayesC: public Model{
 
 };
 
-#endif // !MODEL_HPP
+#endif //MODEL_HPP

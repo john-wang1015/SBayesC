@@ -22,10 +22,10 @@ class SnpInfo{
         const string A2;
         const float A1Freq;
         const int Index;
-        
+
 };
 
-class readFile {
+class Data {
     public:
         unsigned numSNP;
 
@@ -33,9 +33,9 @@ class readFile {
         MatrixXf XTy;       // X'y matrix
         MatrixXf Ddiag;     // diag matrix need to be approximated
         MatrixXf B;         // LD matrix
-        VectorXf b;         // estimated marginal effect, i.e., b_hat
+        VectorXf bhat;         // estimated marginal effect, i.e., b_hat
         VectorXf se;        // standard error for b_hat
-        VectorXd n;         // sample size
+        VectorXf n;         // sample size
 
         void readSummary(const std::string& summaryFilePath);
         void readBinInfo(const std::string& binInfoFilePath);

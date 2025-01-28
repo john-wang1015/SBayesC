@@ -7,16 +7,16 @@
 #include "inference.hpp"
 
 int main() {
-    /*
     std::string binFilePath = "1000G_eur_chr22.ldm.full.bin";
     std::string phenoFilePath = "sim_1.ma";
-    readFile inputData;
-    inputData.readBinFullLD(binFilePath);
-    inputData.readSummary(phenoFilePath);
+    Data data;
+    data.readBinFullLD(binFilePath);
+    data.readSummary(phenoFilePath);
 
-    std::cout << inputData.B(1,1) << std::endl;
-    */
+    BayesC::reconstruction recon;
+    recon.approximateD(data, data.se, data.bhat, data.n);
 
+    std::cout << "Diagonal Matrix D:\n" << recon.D.block(0, 0, 10, 10) << std::endl;
 
     return 0;
 }
