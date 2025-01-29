@@ -28,7 +28,7 @@ class SnpInfo{
 class Data {
     public:
         unsigned numSNP;
-
+        
         MatrixXf XTX;       // X'X matrix
         MatrixXf XTy;       // X'y matrix
         MatrixXf Ddiag;     // diag matrix need to be approximated

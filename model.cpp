@@ -24,10 +24,40 @@ void BayesC::reconstruction::buildXTy(const MatrixXf &bhat, Data &data){
     data.XTy = D * bhat;
 };
 
-void BayesC::SNPEffect::sampleFromPrior(){
-    
+void BayesC::reconstruction::recover(Data& data) {
+    /*
+        Using Cholesky decomposition to recover X and y. If simulate data 
+        used, it should recover the exact X and y.
+    */
+
+}
+
+void BayesC::SNPEffect::sampleFromPrior(const Data& data, VectorXf &currentState, MatrixXf &histMCMCSamples, float mean, float variance){
+    unsigned beta_size = data.numSNP;
+    for (unsigned i = 0; i < beta_size; i++) {
+        currentState[i] = Stat::Normal::sample(mean, variance);
+    }
+    histMCMCSamples.row(0) = currentState.transpose();
+};
+
+void BayesC::SNPEffect::fullconditional(const VectorXf y, const MatrixXf X, const unsigned index, const unsigned iteration) {
+
 
 };
+
+void BayesC::SNPEffect::gradient() {
+
+
+};
+
+void BayesC::Pi::fullconditional() {
+
+};
+
+void BayesC::Pi::gradient() {
+
+
+}
 
 void SBayesC::SNPEffect::fullConditional(const VectorXf &r_adjust,const MatrixXf XTX, VectorXf &beta_current, const float sigma_e, const float sigma_beta){
     /*

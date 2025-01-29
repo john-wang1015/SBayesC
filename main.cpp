@@ -16,7 +16,7 @@ int main() {
     BayesC::reconstruction recon;
     recon.approximateD(data, data.se, data.bhat, data.n);
 
-    std::cout << "Diagonal Matrix D:\n" << recon.D.block(0, 0, 10, 10) << std::endl;
+    std::cout << "Diagonal Matrix D:\n" << recon.D.block(0,0,10,10) << std::endl;
 
     return 0;
 }

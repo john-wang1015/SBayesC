@@ -43,43 +43,63 @@ class Model {
         vector<Parameter*> paramVec;
         vector<Parameter*> paramToPrint;
         vector<ParamSet*> paramSetToPrint;
-        
-        virtual void sampleUnknowns(void) = 0;
-        virtual void sampleStartVal(void) = 0;
     };
 
 
 class BayesC : public Model {
     public:
         class reconstruction{
+            /*
+                Class use to reconstruct XTX and XTy based on summary 
+                statistics data. Individual level model can also use 
+                this as input. 
+            */
             public:
                 MatrixXf D;
 
                 void approximateD(const Data &data, const VectorXf &se, const VectorXf &bhat, const VectorXf &n);
                 void buildXTX(const MatrixXf &B, Data &data);
                 void buildXTy(const MatrixXf &bhat, Data &data);
+                void recover(Data& data);
         };
 
         class SNPEffect: public ParamSet, public Stat::Normal {
             public:
 
-                void sampleFromPrior();
-                void fullconditional();
-                void gradient();
+                void sampleFromPrior(const Data& data, VectorXf& currentState, MatrixXf &histMCMCSamples, float mean, float varaince);
+                void fullconditional(const VectorXf y, const MatrixXf X, const unsigned index, const unsigned iteration);
+                void gradient(); // if use HMC-within-Gibbs
         };
 
         class Pi: public Parameter, public Stat::Beta{
-            
             public:
 
                 void fullconditional();
-                void gradient();
+                void gradient(); // if use HMC-within-Gibbs
+        };
+
+        class effectVar: public Parameter, public Stat::InvChiSq {
+
+        };
+
+        class residualVar : public Parameter, public Stat::InvChiSq {
+
+        };
+
+        class Heritability: public Parameter {
+
+        };
+
+        class numNonZeroSNP : public Parameter {
+
         };
 
     public:
         const Data &data;
-
-
+        VectorXf currentState;              // store current samples
+        MatrixXf histMCMCSamples;           // store all samples
+        MatrixXf X;                         // recovered genotype
+        MatrixXf y;                         // recovered phenotype
 
 };
 
