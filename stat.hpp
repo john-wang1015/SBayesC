@@ -46,6 +46,11 @@ namespace Stat {
     class Flat : public Normal {
     public:
         // flat prior is a normal with infinit variance
+    }; 
+
+    class Uniform {
+    public:
+        float sample(float a, float b);
     };
     
     class InvChiSq {

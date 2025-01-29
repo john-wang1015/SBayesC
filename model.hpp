@@ -63,26 +63,25 @@ class BayesC : public Model {
                 void recover(Data& data);
         };
 
-        class SNPEffect: public ParamSet, public Stat::Normal {
+        class SNPEffect: public ParamSet, public Stat::Normal, public Stat::Uniform {
             public:
-
-                void sampleFromPrior(const Data& data, VectorXf& currentState, MatrixXf &histMCMCSamples, float mean, float varaince);
+                void sampleFromPrior(const Data& data, VectorXf& currentState, MatrixXf &histMCMCSamples, const float mean, const float variance, const float pi);
                 void fullconditional(const VectorXf y, const MatrixXf X, const unsigned index, const unsigned iteration);
                 void gradient(); // if use HMC-within-Gibbs
         };
 
-        class Pi: public Parameter, public Stat::Beta{
+        class Pi: public Parameter, public Stat::Beta, public Stat::Bernoulli{
             public:
-
+                void sampleFromPrior();
                 void fullconditional();
                 void gradient(); // if use HMC-within-Gibbs
         };
 
-        class effectVar: public Parameter, public Stat::InvChiSq {
+        class EffectVar: public Parameter, public Stat::InvChiSq {
 
         };
 
-        class residualVar : public Parameter, public Stat::InvChiSq {
+        class ResidualVar : public Parameter, public Stat::InvChiSq {
 
         };
 
@@ -90,9 +89,11 @@ class BayesC : public Model {
 
         };
 
-        class numNonZeroSNP : public Parameter {
+        class NumNonZeroSNP : public Parameter {
 
         };
+
+        // need have some method to scale the parameters values
 
     public:
         const Data &data;
@@ -100,6 +101,14 @@ class BayesC : public Model {
         MatrixXf histMCMCSamples;           // store all samples
         MatrixXf X;                         // recovered genotype
         MatrixXf y;                         // recovered phenotype
+
+        reconstruction recon;
+        SNPEffect snpEffect;
+        Pi pi;
+        EffectVar effectVar;
+        ResidualVar residualVar;
+        Heritability hsq;
+        NumNonZeroSNP numNonZeroSNP;
 
 };
 

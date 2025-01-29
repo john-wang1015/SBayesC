@@ -32,10 +32,16 @@ void BayesC::reconstruction::recover(Data& data) {
 
 }
 
-void BayesC::SNPEffect::sampleFromPrior(const Data& data, VectorXf &currentState, MatrixXf &histMCMCSamples, float mean, float variance){
+void BayesC::SNPEffect::sampleFromPrior(const Data& data, VectorXf &currentState, MatrixXf &histMCMCSamples,const float mean, const float variance, const float pi){
     unsigned beta_size = data.numSNP;
     for (unsigned i = 0; i < beta_size; i++) {
-        currentState[i] = Stat::Normal::sample(mean, variance);
+        float pi_temp = Stat::Uniform::sample(0.0, 1.0);
+        if (pi_temp >= pi){ // if probability 1 - pi, then follow Normal dist
+            currentState[i] = Stat::Normal::sample(mean, variance);
+        }
+        else {
+            currentState[i] = 0.0;
+        }
     }
     histMCMCSamples.row(0) = currentState.transpose();
 };

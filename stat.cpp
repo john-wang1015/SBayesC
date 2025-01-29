@@ -22,6 +22,10 @@ float Stat::Normal::sample(const float mean, const float variance){
     return mean + snorm()*sqrtf(variance);
 }
 
+float Stat::Uniform::sample(float a, float b) {
+    return a + (b - a) * ranf();
+}
+
 float Stat::InvChiSq::sample(const float df, const float scale){
     //inverse_chi_squared_distribution invchisq(df, scale);
     //return boost::math::quantile(invchisq, ranf());   // don't know why this is not correct
