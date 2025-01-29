@@ -36,7 +36,7 @@ void BayesC::SNPEffect::sampleFromPrior(const Data& data, VectorXf &currentState
     unsigned beta_size = data.numSNP;
     for (unsigned i = 0; i < beta_size; i++) {
         float pi_temp = Stat::Uniform::sample(0.0, 1.0);
-        if (pi_temp >= pi){ // if probability 1 - pi, then follow Normal dist
+        if (pi_temp >= pi - 1e-6){ // if probability 1 - pi, then follow Normal dist
             currentState[i] = Stat::Normal::sample(mean, variance);
         }
         else {
