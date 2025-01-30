@@ -7,6 +7,8 @@
 //
 
 #include "stat.hpp"
+#include <random>
+using namespace std;
 
 void Stat::seedEngine(const int seed){
     if (seed) {
@@ -19,7 +21,10 @@ void Stat::seedEngine(const int seed){
 }
 
 float Stat::Normal::sample(const float mean, const float variance){
-    return mean + snorm()*sqrtf(variance);
+    static std::random_device rd;
+    static std::mt19937 engine(rd());  // Fresh random seed
+    std::normal_distribution<float> dist(mean, sqrtf(variance));
+    return dist(engine);
 }
 
 float Stat::Uniform::sample(float a, float b) {
@@ -45,15 +50,19 @@ float Stat::Beta::sample(const float a, const float b){
 }
 
 unsigned Stat::Bernoulli::sample(const float p){
-    return ranf() < p ? 1:0;
+    static std::random_device rd;
+    static std::mt19937 engine(rd());
+    std::bernoulli_distribution dist(p);
+    return dist(engine);
 }
 
 unsigned Stat::Bernoulli::sample(const VectorXf &p){
+    static std::random_device rd;
+    static std::mt19937 engine(rd());
+    float rnd = std::generate_canonical<float, 10>(engine); // Better randomness
     float cum = 0;
-    float rnd = ranf();
-    long size = p.size();
     unsigned ret = 0;
-    for (unsigned i=0; i<size; ++i) {
+    for (unsigned i = 0; i < p.size(); ++i) {
         cum += p[i];
         if (rnd < cum) {
             ret = i;

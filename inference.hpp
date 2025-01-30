@@ -6,6 +6,7 @@
 #include "model.hpp"
 #include "gibbs.hpp"
 #include "data.hpp"
+#include "stat.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -22,65 +23,57 @@ class MCMC{
         unsigned chinThin;
         unsigned numberChain;
         unsigned numberIterations;
+        string modelUsed;
 
         virtual void initialState(void) = 0;
         virtual void sampleSingleStep(void) = 0;
-};
-
-class Model{
-    /*
-        Select the model used for inference, options are:
-            1. BayesC
-            2. BayesC_adj_prior
-            3. SBayesC with R is identity matrix
-    */
-    public:
-        string modelUsed;
-
         virtual void runInference(void) = 0;
 };
 
-class inferenceBayesC: public MCMC, public Model{
+
+class inferenceBayesC: public MCMC, public Stat::Bernoulli, public BayesC {
     public:
-        void initialState() override {
+        void initialState(void){
+            unsigned numSNP = Model::numSnps;
+            
+            
+        }
+
+        void sampleSingleStep(void){
 
         }
 
-        void sampleSingleStep() override {
-
-        }
-
-        void runInference() override {
+        void runInference(void){
 
         }
 };
 
-class inferenceBayesCadj : public MCMC, public Model {
+class inferenceBayesCadj : public MCMC{
     public:
-        void initialState() override {
+        void initialState(void){
 
         }
 
-        void sampleSingleStep() override {
+        void sampleSingleStep(void){
 
         }
 
-        void runInference() override {
+        void runInference(void){
 
         }
 };
 
-class inferenceSBayesCIden : public MCMC, public Model {
+class inferenceSBayesCIden : public MCMC{
     public:
-        void initialState() override {
+        void initialState(void){
 
         }
 
-        void sampleSingleStep() override {
+        void sampleSingleStep(void){
 
         }
 
-        void runInference() override {
+        void runInference(void){
 
         }
 };

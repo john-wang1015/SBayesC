@@ -60,37 +60,44 @@ class BayesC : public Model {
                 void approximateD(const Data &data, const VectorXf &se, const VectorXf &bhat, const VectorXf &n);
                 void buildXTX(const MatrixXf &B, Data &data);
                 void buildXTy(const MatrixXf &bhat, Data &data);
-                void recover(Data& data);
+                //void recover(Data& data);
         };
 
-        class SNPEffect: public ParamSet, public Stat::Normal, public Stat::Uniform {
+        class SNPEffect: public ParamSet, public Stat::Normal, public Stat::Bernoulli {
             public:
+                SNPEffect() : ParamSet("SNP Effects", vector<string>()), Stat::Normal(), Stat::Bernoulli() {}
+            
                 void sampleFromPrior(const Data& data, VectorXf& currentState, MatrixXf &histMCMCSamples, const float mean, const float variance, const float pi);
-                void fullconditional(const VectorXf y, const MatrixXf X, const unsigned index, const unsigned iteration);
+                void fullconditional(const VectorXf y, const MatrixXf X,  const VectorXf &currentState, float current_value, const unsigned index, const float sigma_beta2, const float sigma_epsilon2);
                 void gradient(); // if use HMC-within-Gibbs
         };
 
-        class Pi: public Parameter, public Stat::Beta, public Stat::Bernoulli{
+        class Pi: public Parameter, public Stat::Bernoulli{
             public:
+                Pi(): Parameter("Pi"), Stat::Bernoulli() {}
                 void sampleFromPrior();
                 void fullconditional();
                 void gradient(); // if use HMC-within-Gibbs
         };
 
         class EffectVar: public Parameter, public Stat::InvChiSq {
-
+            public:
+                EffectVar() : Parameter("Effect Variance"), Stat::InvChiSq() {}
         };
 
         class ResidualVar : public Parameter, public Stat::InvChiSq {
-
+            public:
+                ResidualVar() : Parameter("Residual Variance"), Stat::InvChiSq() {}
         };
 
         class Heritability: public Parameter {
-
+            public:
+                Heritability() : Parameter("hsq") {}
         };
 
         class NumNonZeroSNP : public Parameter {
-
+            public:
+                NumNonZeroSNP() : Parameter("Number of Non-zero snp") {}
         };
 
         // need have some method to scale the parameters values
@@ -109,6 +116,20 @@ class BayesC : public Model {
         ResidualVar residualVar;
         Heritability hsq;
         NumNonZeroSNP numNonZeroSNP;
+
+        BayesC(const Data& data) : 
+            data(data), 
+            snpEffect(), // Explicitly call constructor
+            pi(), 
+            effectVar(), 
+            residualVar(), 
+            hsq(), 
+            numNonZeroSNP() 
+        {
+            unsigned beta_size = data.numSNP;
+            currentState = VectorXf::Zero(beta_size);
+            histMCMCSamples = MatrixXf::Zero(1, beta_size);
+        }
 
 };
 
