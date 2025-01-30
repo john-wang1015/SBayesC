@@ -30,7 +30,7 @@ class Data {
         unsigned numSNP;
         
         MatrixXf XTX;       // X'X matrix
-        MatrixXf XTy;       // X'y matrix
+        VectorXf XTy;       // X'y matrix
         MatrixXf Ddiag;     // diag matrix need to be approximated
         MatrixXf B;         // LD matrix
         VectorXf bhat;         // estimated marginal effect, i.e., b_hat

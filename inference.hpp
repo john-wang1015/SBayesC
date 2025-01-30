@@ -31,7 +31,7 @@ class MCMC{
 };
 
 
-class inferenceBayesC: public MCMC, public Stat::Bernoulli, public BayesC {
+class inferenceSBayesC: public MCMC, public Stat::Bernoulli, public SBayesC {
     public:
         void initialState(void){
             unsigned numSNP = Model::numSnps;
@@ -48,7 +48,7 @@ class inferenceBayesC: public MCMC, public Stat::Bernoulli, public BayesC {
         }
 };
 
-class inferenceBayesCadj : public MCMC{
+class inferenceSBayesCadj : public MCMC{
     public:
         void initialState(void){
 

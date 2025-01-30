@@ -46,7 +46,7 @@ class Model {
     };
 
 
-class BayesC : public Model {
+class SBayesC : public Model {
     public:
         class reconstruction{
             /*
@@ -68,6 +68,8 @@ class BayesC : public Model {
                 SNPEffect() : ParamSet("SNP Effects", vector<string>()), Stat::Normal(), Stat::Bernoulli() {}
             
                 void sampleFromPrior(const Data& data, VectorXf& currentState, MatrixXf &histMCMCSamples, const float mean, const float variance, const float pi);
+                void initialR(const Data& data, const MatrixXf &histMCMCSamples, VectorXf &r_current, MatrixXf &r_hist);
+                void computeR(const Data& data, const float beta_j, VectorXf &r_current, MatrixXf &r_hist);
                 void fullconditional(const VectorXf y, const MatrixXf X,  const VectorXf &currentState, float current_value, const unsigned index, const float sigma_beta2, const float sigma_epsilon2);
                 void gradient(); // if use HMC-within-Gibbs
         };
@@ -104,10 +106,14 @@ class BayesC : public Model {
 
     public:
         const Data &data;
+        unsigned num_iterations;
         VectorXf currentState;              // store current samples
         MatrixXf histMCMCSamples;           // store all samples
+        VectorXf r_current;
+        MatrixXf r_hist;
         MatrixXf X;                         // recovered genotype
         MatrixXf y;                         // recovered phenotype
+    
 
         reconstruction recon;
         SNPEffect snpEffect;
@@ -117,7 +123,7 @@ class BayesC : public Model {
         Heritability hsq;
         NumNonZeroSNP numNonZeroSNP;
 
-        BayesC(const Data& data) : 
+        SBayesC(const Data& data, unsigned num_iterations) : 
             data(data), 
             snpEffect(), // Explicitly call constructor
             pi(), 
@@ -128,14 +134,17 @@ class BayesC : public Model {
         {
             unsigned beta_size = data.numSNP;
             currentState = VectorXf::Zero(beta_size);
-            histMCMCSamples = MatrixXf::Zero(1, beta_size);
+            histMCMCSamples = MatrixXf::Zero(num_iterations, beta_size);
+
+            r_current = VectorXf::Zero(beta_size);
+            r_hist = MatrixXf::Zero(num_iterations, beta_size);
         }
 
 };
 
-class BayesC_adj_prior : public BayesC {
+class SBayesC_adj_prior : public SBayesC {
     public:
-        class SNPEffect : public BayesC::SNPEffect {
+        class SNPEffect : public SBayesC::SNPEffect {
             public:
             
         };
@@ -144,7 +153,7 @@ class BayesC_adj_prior : public BayesC {
 };
 
 
-class SBayesC: public Model{
+class SBayesCI: public Model{
     public:
         class SNPEffect: public ParamSet, public Stat::Normal{
             // SNP effect beta_j

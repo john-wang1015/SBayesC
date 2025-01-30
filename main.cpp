@@ -13,12 +13,15 @@ int main() {
     data.readBinFullLD(binFilePath);
     data.readSummary(phenoFilePath);
 
-    BayesC::reconstruction recon;
+    SBayesC::reconstruction recon;
     recon.approximateD(data, data.se, data.bhat, data.n);
+    recon.buildXTX(data.B, data);
+    recon.buildXTy(data.bhat, data);
 
     //std::cout << "Diagonal Matrix D:\n" << recon.D.block(0,0,10,10) << std::endl;
 
-    BayesC model(data);
+    unsigned num_iterations = 10000;  // Example: 10,000 MCMC iterations
+    SBayesC model(data, num_iterations);    
 
     // Define parameters for sampling
     float mean = 0.0;
@@ -27,9 +30,11 @@ int main() {
 
     // Call sampleFromPrior
     model.snpEffect.sampleFromPrior(data, model.currentState, model.histMCMCSamples, mean, variance, pi);
+    model.snpEffect.initialR(data, model.histMCMCSamples, model.r_current, model.r_hist);
 
     // Print results
     std::cout << "Sampled first 10 SNP effects:\n" << model.currentState.block(0, 0, 10, 1) << std::endl;
+    std::cout << "Sampled first 10 values for r:\n" << model.r_current.block(0, 0, 10, 1) << std::endl;
 
     return 0;
 }
