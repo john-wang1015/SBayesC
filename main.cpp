@@ -33,8 +33,10 @@ int main() {
     model.snpEffect.initialR(data, model.histMCMCSamples, model.r_current, model.r_hist);
 
     // Print results
-    std::cout << "Sampled first 10 SNP effects:\n" << model.currentState.block(0, 0, 10, 1) << std::endl;
-    std::cout << "Sampled first 10 values for r:\n" << model.r_current.block(0, 0, 10, 1) << std::endl;
+    std::cout << "Sampled first 10 SNP effects:\n" << model.histMCMCSamples.block(0, 0, 10, 10) << std::endl;
+    std::cout << "Sampled first 10 values for r:\n" << model.r_hist.block(0, 0, 10, 10) << std::endl;
+
+
 
     return 0;
 }

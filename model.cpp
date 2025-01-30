@@ -69,10 +69,6 @@ void SBayesC::SNPEffect::initialR(const Data& data, const MatrixXf &histMCMCSamp
     }
 
     VectorXf beta_init = histMCMCSamples.row(0).transpose();
-    std::cout << "XTX size: " << data.XTX.rows() << " x " << data.XTX.cols() << std::endl;
-    std::cout << "beta_init size: " << beta_init.rows() << " x " << beta_init.cols() << std::endl;
-    std::cout << "XTy size: " << data.XTy.rows() << " x " << data.XTy.cols() << std::endl;
-    
     r_current.resize(beta_size);
     r_current = data.XTy - data.XTX * beta_init;
 
@@ -84,27 +80,31 @@ void SBayesC::SNPEffect::initialR(const Data& data, const MatrixXf &histMCMCSamp
     r_hist.row(0) = r_current.transpose();
 }
 
-void SBayesC::SNPEffect::computeR(const Data& data, const float beta_j, VectorXf &r_current, MatrixXf &r_hist){
+void SBayesC::SNPEffect::computeR(const Data& data, const VectorXf currentState, VectorXf &r_current, MatrixXf &r_hist, const unsigned iter){
+    unsigned beta_size = data.numSNP;
+    VectorXf r_old = r_current;
+    VectorXf r_new = VectorXf::Zero(beta_size);
 
+    for (unsigned i = 0; i < beta_size; i++) {
+        r_new(i) = r_old(i) + data.XTX(i, i) * currentState(i);
+    }
+
+    r_current = r_new;
+    r_hist.row(iter) = r_current.transpose();
 };
 
-void SBayesC::SNPEffect::fullconditional(const VectorXf y, const MatrixXf X, const VectorXf &currentState, float current_value, const unsigned index, const float sigma_beta2, const float sigma_epsilon2) {
+void SBayesC::SNPEffect::fullconditional(const Data &data, const VectorXf &r_current, VectorXf &currentState, const float sigma_beta2, const float sigma_epsilon2, const unsigned j) {
     /*
         Computes the full conditional probability:
         P(beta_j | beta_{-j}, pi, sigma_beta^2, sigma_epsilon^2) = Normal(X_j^T * w / l_jc, sigma_epsilon^2 / l_jc)
         with probability 1 - pi
     */
-    float sample_old = current_value;
-    VectorXf X_beta = X * currentState;
-    VectorXf Xj_betaj = X.col(index) * currentState(index);
-    VectorXf w = y - (X_beta - Xj_betaj);
+    
+    float l_jc = data.XTX(j,j) + (sigma_epsilon2 / sigma_beta2);
 
-    float l_jc = X.col(index).dot(X.col(index)) + (sigma_epsilon2 / sigma_beta2);
-
-    // Compute beta_hat_j = X_j^T * w / l_jc
-    float beta_hat_j = X.col(index).dot(w) / l_jc;
+    float beta_hat_j = r_current(j) / l_jc;
     // Update the state with the new sample using full conditional probability
-    current_value = Stat::Normal::sample(beta_hat_j, sigma_epsilon2 / l_jc);
+    currentState(j) = Stat::Normal::sample(beta_hat_j, sigma_epsilon2 / l_jc);
 }
 
 void SBayesC::SNPEffect::gradient() {
@@ -113,6 +113,10 @@ void SBayesC::SNPEffect::gradient() {
 };
 
 void SBayesC::Pi::fullconditional() {
+    /*
+         Pi ~ Beta(1,1), the full conditional probability is:
+
+    */
 
 };
 
@@ -120,6 +124,8 @@ void SBayesC::Pi::gradient() {
 
 
 }
+
+
 
 void SBayesCI::SNPEffect::fullConditional(const VectorXf &r_adjust,const MatrixXf XTX, VectorXf &beta_current, const float sigma_e, const float sigma_beta){
     /*

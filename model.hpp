@@ -69,8 +69,8 @@ class SBayesC : public Model {
             
                 void sampleFromPrior(const Data& data, VectorXf& currentState, MatrixXf &histMCMCSamples, const float mean, const float variance, const float pi);
                 void initialR(const Data& data, const MatrixXf &histMCMCSamples, VectorXf &r_current, MatrixXf &r_hist);
-                void computeR(const Data& data, const float beta_j, VectorXf &r_current, MatrixXf &r_hist);
-                void fullconditional(const VectorXf y, const MatrixXf X,  const VectorXf &currentState, float current_value, const unsigned index, const float sigma_beta2, const float sigma_epsilon2);
+                void computeR(const Data& data, const VectorXf currentState, VectorXf& r_current, MatrixXf& r_hist, const unsigned iter);
+                void fullconditional(const Data& data, const VectorXf& r_current, VectorXf& currentState, const float sigma_beta2, const float sigma_epsilon2, const unsigned j);
                 void gradient(); // if use HMC-within-Gibbs
         };
 
@@ -85,21 +85,29 @@ class SBayesC : public Model {
         class EffectVar: public Parameter, public Stat::InvChiSq {
             public:
                 EffectVar() : Parameter("Effect Variance"), Stat::InvChiSq() {}
+                
+                void update();
         };
 
         class ResidualVar : public Parameter, public Stat::InvChiSq {
             public:
                 ResidualVar() : Parameter("Residual Variance"), Stat::InvChiSq() {}
+        
+                void update();
         };
 
         class Heritability: public Parameter {
             public:
                 Heritability() : Parameter("hsq") {}
+
+                void computHdq();
         };
 
         class NumNonZeroSNP : public Parameter {
             public:
                 NumNonZeroSNP() : Parameter("Number of Non-zero snp") {}
+
+                void countZero();
         };
 
         // need have some method to scale the parameters values
@@ -113,7 +121,6 @@ class SBayesC : public Model {
         MatrixXf r_hist;
         MatrixXf X;                         // recovered genotype
         MatrixXf y;                         // recovered phenotype
-    
 
         reconstruction recon;
         SNPEffect snpEffect;

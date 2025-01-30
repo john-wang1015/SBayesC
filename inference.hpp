@@ -26,7 +26,6 @@ class MCMC{
         string modelUsed;
 
         virtual void initialState(void) = 0;
-        virtual void sampleSingleStep(void) = 0;
         virtual void runInference(void) = 0;
 };
 
@@ -37,10 +36,6 @@ class inferenceSBayesC: public MCMC, public Stat::Bernoulli, public SBayesC {
             unsigned numSNP = Model::numSnps;
             
             
-        }
-
-        void sampleSingleStep(void){
-
         }
 
         void runInference(void){
@@ -54,10 +49,6 @@ class inferenceSBayesCadj : public MCMC{
 
         }
 
-        void sampleSingleStep(void){
-
-        }
-
         void runInference(void){
 
         }
@@ -66,10 +57,6 @@ class inferenceSBayesCadj : public MCMC{
 class inferenceSBayesCIden : public MCMC{
     public:
         void initialState(void){
-
-        }
-
-        void sampleSingleStep(void){
 
         }
 
