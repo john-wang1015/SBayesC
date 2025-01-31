@@ -3,36 +3,6 @@
 using namespace Eigen;
 using namespace std;
 
-void SBayesC::reconstruction::approximateD(const Data &data, const VectorXf &se, const VectorXf &bhat, const VectorXf &n){
-    unsigned n_size = data.numSNP;
-    cout << "number of sample: " << n_size << endl;
-    VectorXf diagonalElements(n_size);
-
-    for (unsigned j = 0; j < n_size; ++j) {
-        diagonalElements[j] = 1.0f / (se[j] + (bhat[j] * bhat[j] / n[j]));
-    }
-
-    D = diagonalElements.asDiagonal();
-};
-
-void SBayesC::reconstruction::buildXTX(const MatrixXf &B, Data &data){
-    VectorXf D_sqrt_vec = D.diagonal().cwiseSqrt();
-    DiagonalMatrix<float, Dynamic> D_sqrt(D_sqrt_vec);
-    data.XTX = D_sqrt * B * D_sqrt;
-};
-
-void SBayesC::reconstruction::buildXTy(const MatrixXf &bhat, Data &data){
-    data.XTy = D.diagonal().cwiseProduct(bhat);
-};
-
-//void BayesC::reconstruction::recover(Data& data) {
-    /*
-        Using Cholesky decomposition to recover X and y. If simulate data 
-        used, it should recover the exact X and y.
-    */
-
-//}
-
 void SBayesC::SNPEffect::sampleFromPrior(const Data& data, VectorXf &currentState, MatrixXf &histMCMCSamples,const float mean, const float variance, const float pi){
     unsigned beta_size = data.numSNP;
     VectorXf p(2);
@@ -107,23 +77,25 @@ void SBayesC::SNPEffect::fullconditional(const Data &data, const VectorXf &r_cur
     currentState(j) = Stat::Normal::sample(beta_hat_j, sigma_epsilon2 / l_jc);
 }
 
-void SBayesC::SNPEffect::gradient() {
-
-
-};
-
-void SBayesC::Pi::fullconditional() {
+//void SBayesC::SNPEffect::gradient() {
     /*
-         Pi ~ Beta(1,1), the full conditional probability is:
-
+        update it when we need to 
     */
 
+//};
+
+void SBayesC::Pi::sampleFromPrior(float estimatePi){
+    estimatePi = Stat::Beta::sample(1.0,1.0);
+}
+
+void SBayesC::Pi::fullconditional(const Data &data, const float numSnpEff, float estimatePi) {
+    float alphaTilde = numSnpEff + 1.0;
+    float betaTilde  = data.numSNP - numSnpEff + 1.0;
+    estimatePi = Beta::sample(alphaTilde, betaTilde);
 };
 
-void SBayesC::Pi::gradient() {
-
-
-}
+//void SBayesC::Pi::gradient() {
+//}
 
 
 

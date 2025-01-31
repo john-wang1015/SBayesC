@@ -48,21 +48,6 @@ class Model {
 
 class SBayesC : public Model {
     public:
-        class reconstruction{
-            /*
-                Class use to reconstruct XTX and XTy based on summary 
-                statistics data. Individual level model can also use 
-                this as input. 
-            */
-            public:
-                MatrixXf D;
-
-                void approximateD(const Data &data, const VectorXf &se, const VectorXf &bhat, const VectorXf &n);
-                void buildXTX(const MatrixXf &B, Data &data);
-                void buildXTy(const MatrixXf &bhat, Data &data);
-                //void recover(Data& data);
-        };
-
         class SNPEffect: public ParamSet, public Stat::Normal, public Stat::Bernoulli {
             public:
                 SNPEffect() : ParamSet("SNP Effects", vector<string>()), Stat::Normal(), Stat::Bernoulli() {}
@@ -71,15 +56,16 @@ class SBayesC : public Model {
                 void initialR(const Data& data, const MatrixXf &histMCMCSamples, VectorXf &r_current, MatrixXf &r_hist);
                 void computeR(const Data& data, const VectorXf currentState, VectorXf& r_current, MatrixXf& r_hist, const unsigned iter);
                 void fullconditional(const Data& data, const VectorXf& r_current, VectorXf& currentState, const float sigma_beta2, const float sigma_epsilon2, const unsigned j);
-                void gradient(); // if use HMC-within-Gibbs
+                //void gradient(); // if use HMC-within-Gibbs
         };
 
-        class Pi: public Parameter, public Stat::Bernoulli{
+        class Pi: public Parameter, public Stat::Beta{
             public:
-                Pi(): Parameter("Pi"), Stat::Bernoulli() {}
-                void sampleFromPrior();
-                void fullconditional();
-                void gradient(); // if use HMC-within-Gibbs
+                Pi(): Parameter("Pi"), Stat::Beta() {}
+
+                void sampleFromPrior(float estimatePi);
+                void fullconditional(const Data &data, const float numSnpEff, float estimatePi);
+                //void gradient(); // if use HMC-within-Gibbs
         };
 
         class EffectVar: public Parameter, public Stat::InvChiSq {
@@ -119,10 +105,8 @@ class SBayesC : public Model {
         MatrixXf histMCMCSamples;           // store all samples
         VectorXf r_current;
         MatrixXf r_hist;
-        MatrixXf X;                         // recovered genotype
-        MatrixXf y;                         // recovered phenotype
+        float estimatePi;                  // pi value
 
-        reconstruction recon;
         SNPEffect snpEffect;
         Pi pi;
         EffectVar effectVar;
@@ -153,7 +137,7 @@ class SBayesC_adj_prior : public SBayesC {
     public:
         class SNPEffect : public SBayesC::SNPEffect {
             public:
-            
+                
         };
 
 

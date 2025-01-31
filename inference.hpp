@@ -11,59 +11,56 @@
 using namespace std;
 using namespace Eigen;
 
-class MCMC{
-    /*
-         Multiple MCMC algorithm provide:
-            1. vanilla Hamiltonian monte carlo (vHMC)-within-Gibbs sampler
-            2. NUTS-within-Gibbs sampler (improve Alg 1)
-            3. Skinny Gibbs
-    */
-    public:
-        unsigned chainLength;
-        unsigned chinThin;
-        unsigned numberChain;
-        unsigned numberIterations;
-        string modelUsed;
+class MCMC {
+public:
+    unsigned chainLength;
+    unsigned chainThin;  // Fixed typo from chinThin
+    unsigned numberChain;
+    unsigned numberIterations;
+    std::string modelUsed;
 
-        virtual void initialState(void) = 0;
-        virtual void runInference(void) = 0;
+    virtual void initialState() = 0; // Ensure derived classes implement this
+    virtual void runInference() = 0;
 };
 
-
-class inferenceSBayesC: public MCMC, public Stat::Bernoulli, public SBayesC {
+class inferenceSBayesC : public MCMC {
     public:
-        void initialState(void){
-            unsigned numSNP = Model::numSnps;
+        class reconstruction {
+            public:
+                MatrixXf D;
+
+                void approximateD(const Data &data, const VectorXf &se, const VectorXf &bhat, const VectorXf &n);
+                void buildXTX(const MatrixXf &B, Data &data);
+                void buildXTy(const MatrixXf &bhat, Data &data);
+            };
+
+    public:
+        Data data;
+        string binFilePath;
+        string phenoFilePath;
+        MatrixXf histMCMCSamples;  
+        MatrixXf r_hist; 
+
+        reconstruction recon;
+
+        inferenceSBayesC(const std::string &binFilePath, 
+                        const std::string &phenoFilePath, 
+                        unsigned int num_iterations);
             
-            
-        }
-
-        void runInference(void){
-
-        }
+        void initialState() override;
+        void runInference() override;
 };
 
-class inferenceSBayesCadj : public MCMC{
-    public:
-        void initialState(void){
-
-        }
-
-        void runInference(void){
-
-        }
+class inferenceSBayesCadj : public MCMC {
+public:
+    void initialState(void);
+    void runInference(void);
 };
 
-class inferenceSBayesCIden : public MCMC{
-    public:
-        void initialState(void){
-
-        }
-
-        void runInference(void){
-
-        }
+class inferenceSBayesCIden : public MCMC {
+public:
+    void initialState(void);
+    void runInference(void);
 };
 
 #endif // INFERENCE_HPP
-

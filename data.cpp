@@ -110,7 +110,7 @@ void Data::readSummary(const std::string &summaryFilePath) {
     std::cout << "Summary statistics loaded: " << bhat.size() << " entries." << std::endl;
     auto end = std::chrono::high_resolution_clock::now(); 
     std::chrono::duration<double> elapsed = end - start;
-    std::cout << "Time for read .bin file: " << elapsed.count() << " seconds" << std::endl;
+    std::cout << "Time for read GWAS summary statistics file: " << elapsed.count() << " seconds" << std::endl;
 }
 
 
