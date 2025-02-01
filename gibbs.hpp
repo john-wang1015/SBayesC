@@ -18,7 +18,18 @@ class samples{
 
 };
 
-class gibbsHMCSampler: public samples {
+class gibbsSampler: public samples {
+    /*
+        Simple Gibbs sampler
+    */
+
+   public:
+        
+
+
+};
+
+class HMCSampler: public samples {
     /*
         Class for performing Gibbs sampling with Hamiltonian Monte Carlo (HMC) 
         for full conditional probability sampling.
@@ -35,14 +46,20 @@ class gibbsHMCSampler: public samples {
         unsigned dim;               // Dimensionality of the problem
 
         // Constructors
-        gibbsHMCSampler(
+        HMCSampler(
             unsigned chainLength, 
             unsigned burnIn, 
             unsigned thin, 
             double stepSize, 
             unsigned numLeapfrogSteps, 
             unsigned dim
-        );
+        ) : chainLength(chainLength), burnIn(burnIn), thin(thin), 
+            stepSize(stepSize), numLeapfrogSteps(numLeapfrogSteps), dim(dim) {}
+
+        // Set the initial state of the sampler
+        void HMCSampler::setInitialState(const Eigen::VectorXf& state) {
+            init_state = state;
+        }
 
         // Member functions
         void setInitialState(const Eigen::VectorXf& state); // Set initial state
@@ -61,14 +78,7 @@ class gibbsHMCSampler: public samples {
         Eigen::VectorXf computeGradient(const Eigen::VectorXf& state); // Compute gradient
 };
 
-class gibbsAdaptiveMHSampler: public samples {
-    /*
-        Class for performing Gibbs sampling with random-walk Metropolis-Hasting (MH) 
-        for full conditional probability sampling.
-    */
 
-
-};
 
 
 #endif //GIBBS_HPP

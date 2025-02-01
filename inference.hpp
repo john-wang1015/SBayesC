@@ -44,8 +44,19 @@ class inferenceSBayesC : public MCMC {
         reconstruction recon;
 
         inferenceSBayesC(const std::string &binFilePath, 
-                        const std::string &phenoFilePath, 
-                        unsigned int num_iterations);
+                                   const std::string &phenoFilePath, 
+                                   unsigned int num_iterations)
+            : binFilePath(binFilePath), 
+            phenoFilePath(phenoFilePath) 
+        {
+            this->numberIterations = num_iterations; 
+            this->data.readBinFullLD(this->binFilePath);
+            this->data.readSummary(this->phenoFilePath);
+
+            this->histMCMCSamples = MatrixXf::Zero(this->numberIterations, this->data.numSNP);
+            this->r_hist = MatrixXf::Zero(this->numberIterations, this->data.numSNP);
+        }
+
             
         void initialState() override;
         void runInference() override;

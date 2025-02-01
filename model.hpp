@@ -46,13 +46,16 @@ class Model {
     };
 
 
+/*
+    Original SBayesC model
+*/
 class SBayesC : public Model {
     public:
         class SNPEffect: public ParamSet, public Stat::Normal, public Stat::Bernoulli {
             public:
                 SNPEffect() : ParamSet("SNP Effects", vector<string>()), Stat::Normal(), Stat::Bernoulli() {}
             
-                void sampleFromPrior(const Data& data, VectorXf& currentState, MatrixXf &histMCMCSamples, const float mean, const float variance, const float pi);
+                void sampleFromPrior(const Data& data, VectorXf& currentState, MatrixXf &histMCMCSamples, const VectorXf sigma_beta, const float pi);
                 void initialR(const Data& data, const MatrixXf &histMCMCSamples, VectorXf &r_current, MatrixXf &r_hist);
                 void computeR(const Data& data, const VectorXf currentState, VectorXf& r_current, MatrixXf& r_hist, const unsigned iter);
                 void fullconditional(const Data& data, const VectorXf& r_current, VectorXf& currentState, const float sigma_beta2, const float sigma_epsilon2, const unsigned j);
@@ -68,25 +71,29 @@ class SBayesC : public Model {
                 //void gradient(); // if use HMC-within-Gibbs
         };
 
-        class EffectVar: public Parameter, public Stat::InvChiSq {
+        class EffectVar: public Parameter, public Stat::InvChiSq, public Stat::Gamma {
             public:
-                EffectVar() : Parameter("Effect Variance"), Stat::InvChiSq() {}
+                EffectVar() : Parameter("Effect Variance"), Stat::InvChiSq(), Stat::Gamma() {}
                 
-                void update();
+                void sampleFromPrior();
+                void fullconditional();
+                void transformation();
         };
 
-        class ResidualVar : public Parameter, public Stat::InvChiSq {
+        class ResidualVar : public Parameter, public Stat::InvChiSq, public Stat::Gamma {
             public:
-                ResidualVar() : Parameter("Residual Variance"), Stat::InvChiSq() {}
+                ResidualVar() : Parameter("Residual Variance"), Stat::InvChiSq(), Stat::Gamma() {}
         
-                void update();
+                void sampleFromPrior();
+                void fullconditional();
+                void transformation();
         };
 
         class Heritability: public Parameter {
             public:
                 Heritability() : Parameter("hsq") {}
 
-                void computHdq();
+                void compute();
         };
 
         class NumNonZeroSNP : public Parameter {
@@ -102,10 +109,12 @@ class SBayesC : public Model {
         const Data &data;
         unsigned num_iterations;
         VectorXf currentState;              // store current samples
-        MatrixXf histMCMCSamples;           // store all samples
+        //MatrixXf histMCMCSamples;           // store all samples
         VectorXf r_current;
         MatrixXf r_hist;
-        float estimatePi;                  // pi value
+        VectorXf estimatePi;                  // pi value
+        VectorXf sigma_beta;
+        VectorXf sigma_se;
 
         SNPEffect snpEffect;
         Pi pi;
@@ -125,14 +134,18 @@ class SBayesC : public Model {
         {
             unsigned beta_size = data.numSNP;
             currentState = VectorXf::Zero(beta_size);
-            histMCMCSamples = MatrixXf::Zero(num_iterations, beta_size);
+            //histMCMCSamples = MatrixXf::Zero(num_iterations, beta_size);
 
             r_current = VectorXf::Zero(beta_size);
-            r_hist = MatrixXf::Zero(num_iterations, beta_size);
+            //r_hist = MatrixXf::Zero(num_iterations, beta_size);
         }
 
 };
 
+
+/*
+    SBayesC model with zero effect SNP ~ N(0,1/ sample size)
+*/
 class SBayesC_adj_prior : public SBayesC {
     public:
         class SNPEffect : public SBayesC::SNPEffect {
@@ -143,7 +156,9 @@ class SBayesC_adj_prior : public SBayesC {
 
 };
 
-
+/*
+    SBayesC model with R*sigma_beta where R is identity matrix not D^-1*X^T
+*/
 class SBayesCI: public Model{
     public:
         class SNPEffect: public ParamSet, public Stat::Normal{
@@ -188,5 +203,19 @@ class SBayesCI: public Model{
 
 
 };
+
+/*
+    Combine the change of SBayesC_adj_prior and SBayesCI
+*/
+class SBayesC_new : public SBayesC {
+    public:
+        class SNPEffect : public SBayesC::SNPEffect {
+            public:
+                
+        };
+
+
+};
+
 
 #endif //MODEL_HPP

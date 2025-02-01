@@ -1,20 +1,6 @@
 #include "inference.hpp"
 #include "model.hpp"
 
-inferenceSBayesC::inferenceSBayesC(const std::string &binFilePath, 
-                                   const std::string &phenoFilePath, 
-                                   unsigned int num_iterations)
-    : binFilePath(binFilePath), 
-      phenoFilePath(phenoFilePath) 
-{
-    this->numberIterations = num_iterations; 
-    this->data.readBinFullLD(this->binFilePath);
-    this->data.readSummary(this->phenoFilePath);
-
-    this->histMCMCSamples = MatrixXf::Zero(this->numberIterations, this->data.numSNP);
-    this->r_hist = MatrixXf::Zero(this->numberIterations, this->data.numSNP);
-}
-
 void inferenceSBayesC::reconstruction::approximateD(const Data &data, const VectorXf &se, const VectorXf &bhat, const VectorXf &n){
     unsigned n_size = data.numSNP;
     cout << "number of sample: " << n_size << endl;
@@ -47,17 +33,14 @@ void inferenceSBayesC::initialState() {
 
     SBayesC model(this->data, this->numberIterations);   
 
-    float mean = 0.0;
-    float variance = 1.0;
     float pi = 0.5;
 
-    // Call sampleFromPrior
-    model.snpEffect.sampleFromPrior(this->data, model.currentState, this->histMCMCSamples, mean, variance, pi);
+    // initial beta values for sampling
+    model.snpEffect.sampleFromPrior(this->data, model.currentState, this->histMCMCSamples, model.sigma_beta, pi);
+    // initial r values for update
     model.snpEffect.initialR(this->data, this->histMCMCSamples, model.r_current, this->r_hist);
 
-    // Print results
-    //std::cout << "Sampled first 10 SNP effects:\n" << this->histMCMCSamples.block(0, 0, 10, 10) << std::endl;
-    //std::cout << "Sampled first 10 values for r:\n" << this->r_hist.block(0, 0, 10, 10) << std::endl;
+
 }
 
 void inferenceSBayesC::runInference() {

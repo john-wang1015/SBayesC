@@ -1,11 +1,3 @@
-//
-//  stat.cpp
-//  gctb
-//
-//  Created by Jian Zeng on 14/06/2016.
-//  Copyright © 2016 Jian Zeng. All rights reserved.
-//
-
 #include "stat.hpp"
 #include <random>
 using namespace std;
@@ -31,17 +23,19 @@ float Stat::Uniform::sample(float a, float b) {
     return a + (b - a) * ranf();
 }
 
-float Stat::InvChiSq::sample(const float df, const float scale){
-    //inverse_chi_squared_distribution invchisq(df, scale);
-    //return boost::math::quantile(invchisq, ranf());   // don't know why this is not correct
-    
-    gamma_generator sgamma(engine, gamma_distribution(0.5f*df, 1));
-    return scale/(2.0f*sgamma());
+float Stat::InvChiSq::sample(const float df, const float scale) {
+    static std::random_device rd;
+    static std::mt19937 engine(rd());
+    std::gamma_distribution<float> gamma_dist(0.5f * df, 0.5f); 
+    float gamma_sample = gamma_dist(engine);
+    return scale * df / gamma_sample;  
 }
 
-float Stat::Gamma::sample(const float shape, const float scale){
-    gamma_generator sgamma(engine, gamma_distribution(shape, scale));
-    return sgamma();
+float Stat::Gamma::sample(const float shape, const float scale) {
+    static std::random_device rd;
+    static std::mt19937 engine(rd());  
+    std::gamma_distribution<float> gamma_dist(shape, scale);  
+    return gamma_dist(engine); 
 }
 
 float Stat::Beta::sample(const float a, const float b){
@@ -59,7 +53,7 @@ unsigned Stat::Bernoulli::sample(const float p){
 unsigned Stat::Bernoulli::sample(const VectorXf &p){
     static std::random_device rd;
     static std::mt19937 engine(rd());
-    float rnd = std::generate_canonical<float, 10>(engine); // Better randomness
+    float rnd = std::generate_canonical<float, 10>(engine); 
     float cum = 0;
     unsigned ret = 0;
     for (unsigned i = 0; i < p.size(); ++i) {

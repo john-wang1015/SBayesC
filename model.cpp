@@ -3,7 +3,7 @@
 using namespace Eigen;
 using namespace std;
 
-void SBayesC::SNPEffect::sampleFromPrior(const Data& data, VectorXf &currentState, MatrixXf &histMCMCSamples,const float mean, const float variance, const float pi){
+void SBayesC::SNPEffect::sampleFromPrior(const Data& data, VectorXf &currentState, MatrixXf &histMCMCSamples, const VectorXf sigma_beta, const float pi){
     unsigned beta_size = data.numSNP;
     VectorXf p(2);
     p << 1 - pi, pi;
@@ -16,7 +16,7 @@ void SBayesC::SNPEffect::sampleFromPrior(const Data& data, VectorXf &currentStat
         unsigned is_included = Stat::Bernoulli::sample(p);
 
         if (is_included){ // if probability 1 - pi, then follow Normal dist
-            currentState[i] = Stat::Normal::sample(mean, variance);
+            currentState[i] = Stat::Normal::sample(0.0, sigma_beta(0));
         }
         else {
             currentState[i] = 0.0;
@@ -96,6 +96,33 @@ void SBayesC::Pi::fullconditional(const Data &data, const float numSnpEff, float
 
 //void SBayesC::Pi::gradient() {
 //}
+
+void SBayesC::EffectVar::sampleFromPrior(){
+    
+};
+
+
+void SBayesC::EffectVar::fullconditional(){
+
+};
+
+void SBayesC::EffectVar::transformation(){
+
+};
+
+
+void SBayesC::ResidualVar::sampleFromPrior(){
+
+};
+
+
+void SBayesC::ResidualVar::fullconditional(){
+
+};
+
+void SBayesC::ResidualVar::transformation(){
+
+};
 
 
 
