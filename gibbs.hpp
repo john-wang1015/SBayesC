@@ -11,7 +11,11 @@
 class samples{
     public:
         unsigned numChain;
-        
+        unsigned chainLength; 
+        unsigned burnIn;      
+        unsigned thin;       
+
+        Eigen::VectorXf init_state; 
 
         void transformation();
         void invTransformation();
@@ -20,46 +24,37 @@ class samples{
 
 class gibbsSampler: public samples {
     /*
-        Simple Gibbs sampler
+        Class for performing Gibbs sampling with random-walk Metropolis-Hasting (MH) 
+        for full conditional probability sampling.
     */
+    public:
 
-   public:
+        void sampleSnpEff();
+
         
-
-
 };
 
-class HMCSampler: public samples {
+
+class gibbsHMCSampler: public samples {
     /*
         Class for performing Gibbs sampling with Hamiltonian Monte Carlo (HMC) 
         for full conditional probability sampling.
     */
     public:
         // Parameters
-        unsigned chainLength; // Total number of samples in the chain
-        unsigned burnIn;      // Number of samples to discard as burn-in
-        unsigned thin;        // Thinning interval (e.g., save every nth sample)
-
-        Eigen::VectorXf init_state; // Initial state of the Markov chain
         double stepSize;            // Step size for HMC leapfrog integration
         unsigned numLeapfrogSteps;  // Number of leapfrog steps for HMC
         unsigned dim;               // Dimensionality of the problem
 
         // Constructors
-        HMCSampler(
+        gibbsHMCSampler(
             unsigned chainLength, 
             unsigned burnIn, 
             unsigned thin, 
             double stepSize, 
             unsigned numLeapfrogSteps, 
             unsigned dim
-        ) : chainLength(chainLength), burnIn(burnIn), thin(thin), 
-            stepSize(stepSize), numLeapfrogSteps(numLeapfrogSteps), dim(dim) {}
-
-        // Set the initial state of the sampler
-        void HMCSampler::setInitialState(const Eigen::VectorXf& state) {
-            init_state = state;
-        }
+        );
 
         // Member functions
         void setInitialState(const Eigen::VectorXf& state); // Set initial state
@@ -77,7 +72,6 @@ class HMCSampler: public samples {
         double computeLogProb(const Eigen::VectorXf& state); // Compute log-probability
         Eigen::VectorXf computeGradient(const Eigen::VectorXf& state); // Compute gradient
 };
-
 
 
 

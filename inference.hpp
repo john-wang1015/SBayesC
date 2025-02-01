@@ -40,14 +40,19 @@ class inferenceSBayesC : public MCMC {
         string phenoFilePath;
         MatrixXf histMCMCSamples;  
         MatrixXf r_hist; 
+        VectorXf estimatePi_hist;
+        VectorXf sigma_beta_hist;
+        VectorXf sigma_se_hist;
 
         reconstruction recon;
+        SBayesC model; 
 
         inferenceSBayesC(const std::string &binFilePath, 
                                    const std::string &phenoFilePath, 
                                    unsigned int num_iterations)
             : binFilePath(binFilePath), 
-            phenoFilePath(phenoFilePath) 
+            phenoFilePath(phenoFilePath),
+            model(this->data, num_iterations) 
         {
             this->numberIterations = num_iterations; 
             this->data.readBinFullLD(this->binFilePath);
@@ -55,9 +60,11 @@ class inferenceSBayesC : public MCMC {
 
             this->histMCMCSamples = MatrixXf::Zero(this->numberIterations, this->data.numSNP);
             this->r_hist = MatrixXf::Zero(this->numberIterations, this->data.numSNP);
+            this->estimatePi_hist = VectorXf::Zero(this->numberIterations);
+            this->sigma_beta_hist = VectorXf::Zero(this->numberIterations);
+            this->sigma_se_hist = VectorXf::Zero(this->numberIterations);
         }
 
-            
         void initialState() override;
         void runInference() override;
 };

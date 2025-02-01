@@ -3,10 +3,10 @@
 using namespace Eigen;
 using namespace std;
 
-void SBayesC::SNPEffect::sampleFromPrior(const Data& data, VectorXf &currentState, MatrixXf &histMCMCSamples, const VectorXf sigma_beta, const float pi){
+void SBayesC::SNPEffect::sampleFromPrior(const Data& data, VectorXf &currentState, MatrixXf &histMCMCSamples, const float current_sigma_beta, const float current_pi){
     unsigned beta_size = data.numSNP;
     VectorXf p(2);
-    p << 1 - pi, pi;
+    p << 1 - current_pi, current_pi;
 
     if (currentState.size() != beta_size) {
         currentState = VectorXf::Zero(beta_size);
@@ -16,7 +16,7 @@ void SBayesC::SNPEffect::sampleFromPrior(const Data& data, VectorXf &currentStat
         unsigned is_included = Stat::Bernoulli::sample(p);
 
         if (is_included){ // if probability 1 - pi, then follow Normal dist
-            currentState[i] = Stat::Normal::sample(0.0, sigma_beta(0));
+            currentState[i] = Stat::Normal::sample(0.0, current_sigma_beta);
         }
         else {
             currentState[i] = 0.0;
@@ -50,7 +50,7 @@ void SBayesC::SNPEffect::initialR(const Data& data, const MatrixXf &histMCMCSamp
     r_hist.row(0) = r_current.transpose();
 }
 
-void SBayesC::SNPEffect::computeR(const Data& data, const VectorXf currentState, VectorXf &r_current, MatrixXf &r_hist, const unsigned iter){
+void SBayesC::SNPEffect::computeR(const Data& data, const VectorXf &currentState, VectorXf &r_current){
     unsigned beta_size = data.numSNP;
     VectorXf r_old = r_current;
     VectorXf r_new = VectorXf::Zero(beta_size);
@@ -60,7 +60,6 @@ void SBayesC::SNPEffect::computeR(const Data& data, const VectorXf currentState,
     }
 
     r_current = r_new;
-    r_hist.row(iter) = r_current.transpose();
 };
 
 void SBayesC::SNPEffect::fullconditional(const Data &data, const VectorXf &r_current, VectorXf &currentState, const float sigma_beta2, const float sigma_epsilon2, const unsigned j) {
@@ -73,7 +72,7 @@ void SBayesC::SNPEffect::fullconditional(const Data &data, const VectorXf &r_cur
     float l_jc = data.XTX(j,j) + (sigma_epsilon2 / sigma_beta2);
 
     float beta_hat_j = r_current(j) / l_jc;
-    // Update the state with the new sample using full conditional probability
+
     currentState(j) = Stat::Normal::sample(beta_hat_j, sigma_epsilon2 / l_jc);
 }
 
@@ -84,21 +83,21 @@ void SBayesC::SNPEffect::fullconditional(const Data &data, const VectorXf &r_cur
 
 //};
 
-void SBayesC::Pi::sampleFromPrior(float estimatePi){
-    estimatePi = Stat::Beta::sample(1.0,1.0);
+void SBayesC::Pi::sampleFromPrior(){
+    current_pi = Stat::Beta::sample(1.0,1.0);
 }
 
-void SBayesC::Pi::fullconditional(const Data &data, const float numSnpEff, float estimatePi) {
+void SBayesC::Pi::fullconditional(const Data &data, const float numSnpEff, float current_pi) {
     float alphaTilde = numSnpEff + 1.0;
     float betaTilde  = data.numSNP - numSnpEff + 1.0;
-    estimatePi = Beta::sample(alphaTilde, betaTilde);
+    current_pi = Beta::sample(alphaTilde, betaTilde);
 };
 
 //void SBayesC::Pi::gradient() {
 //}
 
 void SBayesC::EffectVar::sampleFromPrior(){
-    
+    current_sigma_beta = InvChiSq::sample(df, scale);
 };
 
 
@@ -112,9 +111,8 @@ void SBayesC::EffectVar::transformation(){
 
 
 void SBayesC::ResidualVar::sampleFromPrior(){
-
+    current_sigma_se = InvChiSq::sample(df, scale);
 };
-
 
 void SBayesC::ResidualVar::fullconditional(){
 
@@ -123,8 +121,6 @@ void SBayesC::ResidualVar::fullconditional(){
 void SBayesC::ResidualVar::transformation(){
 
 };
-
-
 
 void SBayesCI::SNPEffect::fullConditional(const VectorXf &r_adjust,const MatrixXf XTX, VectorXf &beta_current, const float sigma_e, const float sigma_beta){
     /*
@@ -142,10 +138,8 @@ void SBayesCI::SNPEffect::fullConditional(const VectorXf &r_adjust,const MatrixX
 
 };
 
-void SBayesCI::SNPEffect::gradient(){
+//void SBayesCI::SNPEffect::gradient(){
     /*
         Since the full conditional probability is Gaussian, not necessary to use autodiff library
     */
-
-
-};
+//};

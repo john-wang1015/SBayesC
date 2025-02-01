@@ -14,6 +14,7 @@ int main() {
 
     inferenceSBayesC infer(binFilePath, phenoFilePath, num_iterations);
     infer.initialState();
+    infer.runInference();
 
     return 0;
 }

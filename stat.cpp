@@ -38,9 +38,17 @@ float Stat::Gamma::sample(const float shape, const float scale) {
     return gamma_dist(engine); 
 }
 
-float Stat::Beta::sample(const float a, const float b){
-    beta_distribution beta(a,b);
-    return boost::math::quantile(beta,ranf());
+float Stat::Beta::sample(const float a, const float b) {
+    static std::random_device rd;
+    static std::mt19937 engine(rd());
+
+    std::gamma_distribution<float> gamma_a(a, 1.0f);
+    std::gamma_distribution<float> gamma_b(b, 1.0f);
+
+    float x = gamma_a(engine);
+    float y = gamma_b(engine);
+
+    return x / (x + y);  
 }
 
 unsigned Stat::Bernoulli::sample(const float p){

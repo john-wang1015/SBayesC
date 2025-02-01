@@ -55,25 +55,38 @@ class SBayesC : public Model {
             public:
                 SNPEffect() : ParamSet("SNP Effects", vector<string>()), Stat::Normal(), Stat::Bernoulli() {}
             
-                void sampleFromPrior(const Data& data, VectorXf& currentState, MatrixXf &histMCMCSamples, const VectorXf sigma_beta, const float pi);
+                void sampleFromPrior(const Data& data, VectorXf& currentState, MatrixXf &histMCMCSamples, const float current_sigma_beta, const float current_pi);
                 void initialR(const Data& data, const MatrixXf &histMCMCSamples, VectorXf &r_current, MatrixXf &r_hist);
-                void computeR(const Data& data, const VectorXf currentState, VectorXf& r_current, MatrixXf& r_hist, const unsigned iter);
+                void computeR(const Data& data, const VectorXf &currentState, VectorXf &r_current);
                 void fullconditional(const Data& data, const VectorXf& r_current, VectorXf& currentState, const float sigma_beta2, const float sigma_epsilon2, const unsigned j);
                 //void gradient(); // if use HMC-within-Gibbs
         };
 
         class Pi: public Parameter, public Stat::Beta{
             public:
-                Pi(): Parameter("Pi"), Stat::Beta() {}
+                float current_pi;
 
-                void sampleFromPrior(float estimatePi);
-                void fullconditional(const Data &data, const float numSnpEff, float estimatePi);
+                Pi(): Parameter("Pi"), Stat::Beta() {
+                    current_pi = 0.0f;
+                }
+
+                void sampleFromPrior();
+                void fullconditional(const Data &data, const float numSnpEff, float current_pi);
+                void updatePi();
                 //void gradient(); // if use HMC-within-Gibbs
         };
 
         class EffectVar: public Parameter, public Stat::InvChiSq, public Stat::Gamma {
             public:
-                EffectVar() : Parameter("Effect Variance"), Stat::InvChiSq(), Stat::Gamma() {}
+                float df;
+                float scale;
+                float current_sigma_beta;
+            
+                EffectVar() : Parameter("Effect Variance"), Stat::InvChiSq(), Stat::Gamma() {
+                    df = 4.0f;
+                    scale = 1.0f;
+                    current_sigma_beta = 0.0f;
+                }
                 
                 void sampleFromPrior();
                 void fullconditional();
@@ -82,7 +95,15 @@ class SBayesC : public Model {
 
         class ResidualVar : public Parameter, public Stat::InvChiSq, public Stat::Gamma {
             public:
-                ResidualVar() : Parameter("Residual Variance"), Stat::InvChiSq(), Stat::Gamma() {}
+                float df;
+                float scale;
+                float current_sigma_se;
+
+                ResidualVar() : Parameter("Residual Variance"), Stat::InvChiSq(), Stat::Gamma() {
+                    df = 4.0f;
+                    scale = 1.0f;
+                    current_sigma_se = 0.0f;
+                }
         
                 void sampleFromPrior();
                 void fullconditional();
@@ -98,9 +119,15 @@ class SBayesC : public Model {
 
         class NumNonZeroSNP : public Parameter {
             public:
+                unsigned nonZeroEff;
+                unsigned zeroEff;
+
                 NumNonZeroSNP() : Parameter("Number of Non-zero snp") {}
 
-                void countZero();
+                void countZero(const Data &data, const VectorXf &currentState){
+                    zeroEff = (currentState.array() == 0).count();
+                    nonZeroEff = data.numSNP - zeroEff;
+                };
         };
 
         // need have some method to scale the parameters values
@@ -133,9 +160,11 @@ class SBayesC : public Model {
             numNonZeroSNP() 
         {
             unsigned beta_size = data.numSNP;
+            sigma_beta  = VectorXf::Zero(num_iterations);
+            estimatePi  = VectorXf::Zero(num_iterations);
+
             currentState = VectorXf::Zero(beta_size);
             //histMCMCSamples = MatrixXf::Zero(num_iterations, beta_size);
-
             r_current = VectorXf::Zero(beta_size);
             //r_hist = MatrixXf::Zero(num_iterations, beta_size);
         }

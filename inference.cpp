@@ -29,21 +29,52 @@ void inferenceSBayesC::initialState() {
     this->recon.buildXTX(this->data.B, this->data);
     this->recon.buildXTy(this->data.bhat, this->data);
 
-    //std::cout << "Diagonal Matrix D:\n" << this->recon.D.block(0, 0, 10, 10) << std::endl;
+    //SBayesC model(this->data, this->numberIterations);   
+    model.pi.sampleFromPrior();
+    model.effectVar.sampleFromPrior();
+    model.residualVar.sampleFromPrior();
+    model.snpEffect.sampleFromPrior(this->data, model.currentState, this->histMCMCSamples, model.effectVar.current_sigma_beta, model.pi.current_pi);
+    model.snpEffect.initialR(this->data, this->histMCMCSamples, model.r_current, this->r_hist); 
 
-    SBayesC model(this->data, this->numberIterations);   
+    /*
+    cout << "Initial Pi is: " << model.pi.current_pi << endl;
+    cout << "Sigma_beta value is: " << model.effectVar.current_sigma_beta << endl;
+    cout << "Sigma_se value is: " << model.residualVar.current_sigma_se << endl;
+    std::cout << "Sampled first 10 SNP effects:\n" << this->histMCMCSamples.block(0, 0, 10, 10) << std::endl;
+    std::cout << "Sampled first 10 values for r:\n" << this->r_hist.block(0, 0, 10, 10) << std::endl;
+    */
 
-    float pi = 0.5;
-
-    // initial beta values for sampling
-    model.snpEffect.sampleFromPrior(this->data, model.currentState, this->histMCMCSamples, model.sigma_beta, pi);
-    // initial r values for update
-    model.snpEffect.initialR(this->data, this->histMCMCSamples, model.r_current, this->r_hist);
-
-
+    /*
+        Pending: !store all values to history matrix
+    */   
 }
 
 void inferenceSBayesC::runInference() {
+
+    for (int i = 0; i < numberIterations; i++){
+        // store the r_current and beta_current as vectorXf from Matrx of history
+        VectorXf beta_old = this->histMCMCSamples.row(i);
+        VectorXf r_old = this->r_hist.row(i);
+        float pi_old = model.pi.current_pi;
+
+        model.snpEffect.computeR(this->data, beta_old, r_old);
+        VectorXf r_new = r_old;
+        this->r_hist.row(i+1) = r_new;
+
+        for (int j = 0; j < this-> data.numSNP; j++){
+            
+
+        }
+
+        // update effectVar and residualVar
+
+
+        // update Pi
+
+
+        // compute hsq
+
+    }
 
 }
 
