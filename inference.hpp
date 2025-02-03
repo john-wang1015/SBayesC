@@ -38,7 +38,8 @@ class inferenceSBayesC : public MCMC {
         Data data;
         string binFilePath;
         string phenoFilePath;
-        MatrixXf histMCMCSamples;  
+        MatrixXf histMCMCSamples; 
+        MatrixXf beta_hat_hist; 
         MatrixXf r_hist; 
         VectorXf estimatePi_hist;
         VectorXf sigma_beta_hist;
@@ -59,6 +60,7 @@ class inferenceSBayesC : public MCMC {
             this->data.readSummary(this->phenoFilePath);
 
             this->histMCMCSamples = MatrixXf::Zero(this->numberIterations, this->data.numSNP);
+            this->beta_hat_hist = MatrixXf::Zero(this->numberIterations, this->data.numSNP);
             this->r_hist = MatrixXf::Zero(this->numberIterations, this->data.numSNP);
             this->estimatePi_hist = VectorXf::Zero(this->numberIterations);
             this->sigma_beta_hist = VectorXf::Zero(this->numberIterations);
