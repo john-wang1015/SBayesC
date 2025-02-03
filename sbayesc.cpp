@@ -209,8 +209,8 @@ int main() {
             uhat = invLhs * rhs;
 
             logDelta_active = 0.5*(log(invLhs) - log(sigmaSq(i-1)) + uhat*rhs) + log(pi(i-1));
-            logDelta_inactive = log(pi(i-1));
-            pi_current = 1.0 - 1.0 / (1.0 + exp(logDelta_inactive - logDelta_active));
+            logDelta_inactive = log(1 - pi(i-1));
+            pi_current = 1.0 / (1.0 + exp(logDelta_inactive - logDelta_active));
 
             delta = sample_bernoulli(pi_current);
             if (delta == 1){
