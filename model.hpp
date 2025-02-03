@@ -57,7 +57,7 @@ class SBayesC : public Model {
             
                 void sampleFromPrior(const Data& data, VectorXf& currentState, MatrixXf &histMCMCSamples, const float current_sigma_beta, const float current_pi);
                 void initialR(const Data& data, const MatrixXf &histMCMCSamples, VectorXf &r_current, MatrixXf &r_hist);
-                void computeR(const Data& data, const VectorXf &currentState, VectorXf &r_current);
+                //void computeR(const Data& data, const VectorXf &currentState, VectorXf &r_current);
                 void fullconditional(const Data& data, const VectorXf& r_current, VectorXf& currentState, const float sigma_beta2, const float sigma_epsilon2, const unsigned j);
                 //void gradient(); // if use HMC-within-Gibbs
         };
@@ -90,7 +90,7 @@ class SBayesC : public Model {
                 
                 void sampleFromPrior();
                 void fullconditional();
-                void transformation();
+                void scaleEffVar();
         };
 
         class ResidualVar : public Parameter, public Stat::InvChiSq, public Stat::Gamma {
@@ -107,7 +107,7 @@ class SBayesC : public Model {
         
                 void sampleFromPrior();
                 void fullconditional();
-                void transformation();
+                void scaleResVar();
         };
 
         class Heritability: public Parameter {

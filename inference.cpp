@@ -50,18 +50,27 @@ void inferenceSBayesC::initialState() {
 }
 
 void inferenceSBayesC::runInference() {
+    VectorXf r_current_new = VectorXf::Zero(this->data.numSNP);
+    float invLhs, Rhs;
+    float beta_mean, logDelta;
+    float logSigmaSq;
 
-    for (int i = 0; i < numberIterations; i++){
+    for (int i = 1; i < numberIterations+1; i++){
         // store the r_current and beta_current as vectorXf from Matrx of history
-        VectorXf beta_old = this->histMCMCSamples.row(i);
-        VectorXf r_old = this->r_hist.row(i);
+        VectorXf beta_old = model.currentState;//this->histMCMCSamples.row(i-1);
+        VectorXf r_fix = this->r_hist.row(0);
         float pi_old = model.pi.current_pi;
 
-        model.snpEffect.computeR(this->data, beta_old, r_old);
-        VectorXf r_new = r_old;
-        this->r_hist.row(i+1) = r_new;
+        //model.snpEffect.computeR(this->data, beta_old, r_old);
+        //VectorXf r_new = r_old;
+        //this->r_hist.row(i+1) = r_new;
 
         for (int j = 0; j < this-> data.numSNP; j++){
+            Rhs =  (r_fix(i) + this->data.XTX(j,j) * beta_old(j))/(1/this->data.n(i));
+            invLhs = 1.0/(1/(1/this->data.n(i)) + 1);
+            beta_mean = invLhs*Rhs;
+
+            logDelta = 0.5*(log(invLhs) - logSigmaSq + beta_mean*Rhs) + log(model.estimatePi(i));
             
 
         }

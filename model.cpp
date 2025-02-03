@@ -50,6 +50,7 @@ void SBayesC::SNPEffect::initialR(const Data& data, const MatrixXf &histMCMCSamp
     r_hist.row(0) = r_current.transpose();
 }
 
+/*
 void SBayesC::SNPEffect::computeR(const Data& data, const VectorXf &currentState, VectorXf &r_current){
     unsigned beta_size = data.numSNP;
     VectorXf r_old = r_current;
@@ -61,7 +62,7 @@ void SBayesC::SNPEffect::computeR(const Data& data, const VectorXf &currentState
 
     r_current = r_new;
 };
-
+*/
 void SBayesC::SNPEffect::fullconditional(const Data &data, const VectorXf &r_current, VectorXf &currentState, const float sigma_beta2, const float sigma_epsilon2, const unsigned j) {
     /*
         Computes the full conditional probability:
