@@ -53,6 +53,10 @@ void readBinFullLD(const std::string& binFilePath, unsigned &numSNP, MatrixXf &B
     std::cout << "Time for read .bin file: " << elapsed.count() << " seconds" << std::endl;
 }
 
+void readBinTxtFile(const std::string& binFilePath, unsigned &numSNP, MatrixXf &B){
+    
+}
+
 void readSummary(const std::string &summaryFilePath, VectorXf &b, VectorXf &se) {
     auto start = std::chrono::high_resolution_clock::now(); // Start timing
     std::ifstream file(summaryFilePath);
