@@ -237,7 +237,7 @@ int main() {
 
     VectorXf scale = (1.0 / (numSNP * se.array().square())).sqrt(); 
     // scale SNP effect
-    VectorXf bhat = b.array();// * scale.array();  
+    VectorXf bhat = b.array();// *scale.array();
 
     float vary = 1.0;
     float varg = hsq(0);
@@ -246,8 +246,8 @@ int main() {
     sigmaSq(0) = varg / (numSNP * pi(0));
 
     float nub = 4.0f, nue = 4.0f;
-    float scaleb = sigmaSq(0); // (nub - 2) / nub * sigmaSq(0);
-    float scalee = vare; // (nue - 2) / nue * vare;
+    float scaleb = (nub - 2) / nub * sigmaSq(0);
+    float scalee = (nue - 2) / nue * vare;
 
     VectorXf beta = VectorXf::Zero(numSNP);
     MatrixXf beta_mcmc = MatrixXf::Zero(n_iter+1, numSNP);
