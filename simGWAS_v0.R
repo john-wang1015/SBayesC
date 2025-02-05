@@ -1,7 +1,7 @@
 library(MASS)
 simGWAS <- function(N=1e5, # Sample size
                     hsq=0.2, # heritability
-                    m=10, # number of causal variants
+                    m=100, # number of causal variants
                     M=1000, # total number of SNPs
                     R=R){ # LD matrix - MxM matrix
   ## sampple causal effects
@@ -23,8 +23,9 @@ M <- 1000
 r <- 0.9 # auto-regressive correlation : corr(X_i,X_j) = r^|i-j|
 ldm <- outer(1:M,1:M,FUN = function(i,j) r**abs(i-j))
 
-tt <- system.time( GWASss <- simGWAS(N=1e5,hsq=0.2,m=10,M=1000,R=ldm) )
+tt <- system.time( GWASss <- simGWAS(N=1e5,hsq=0.2,m=10,M=100,R=ldm) )
 
 write.table(GWASss, file = "GWASss.ma", sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
+#save(ldm, file = "ldm_data.RData")
 
-write.table(ldm, file = "ldm_data1.txt", sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(ldm, file = "ldm_data1.ma", sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
