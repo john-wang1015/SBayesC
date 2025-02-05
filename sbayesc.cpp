@@ -66,24 +66,14 @@ void readBinTxtFile(const std::string& binFilePath, unsigned& numSNP, Eigen::Mat
 
     unsigned row = 0;
     while (std::getline(file, line) && row < numSNP) {
-        if (line.empty()) continue;  
+        if (line.empty()) continue;
 
         std::istringstream ss(line);
-        std::vector<float> values;
-        float value;
+        std::vector<double> values;
+        double value;
 
         while (ss >> value) {
             values.push_back(value);
-        }
-
-        // **DEBUG 2: Print character count and detected columns**
-        std::cout << " Length: " << line.length()
-            << " Columns Detected: " << values.size() << std::endl;
-
-        // **Check for expected number of columns**
-        if (values.size() != numSNP) {
-            std::cerr << "Warning: Row " << row << " has " << values.size()
-                << " columns instead of " << numSNP << std::endl;
         }
 
         for (unsigned col = 0; col < std::min(values.size(), static_cast<size_t>(numSNP)); col++) {
@@ -94,15 +84,8 @@ void readBinTxtFile(const std::string& binFilePath, unsigned& numSNP, Eigen::Mat
     }
 
     file.close();
-
-    if (row != numSNP) {
-        std::cerr << "Error: File contains " << row << " rows instead of expected " << numSNP << std::endl;
-        return;
-    }
-
-    std::cout << "Matrix loaded successfully. First element: " << B(0, 0)
-        << ", Last element: " << B(numSNP - 1, numSNP - 1) << std::endl;
 }
+
 
 void readSummary(const std::string& summaryFilePath, Eigen::VectorXf& b, Eigen::VectorXf& se, Eigen::VectorXf& n, unsigned numSNP) {
     auto start = std::chrono::high_resolution_clock::now(); // Start timing
@@ -224,6 +207,8 @@ int main() {
     //readBinFullLD(binFilePath, numSNP, LD);
     readBinTxtFile(binFilePath, numSNP, LD);
     readSummary(phenoFilePath, b, se, n ,numSNP);
+
+    std::cout << LD.block(0, 0, 10, 10) << std::endl;
 
     unsigned n_iter = 10000;
     float pi_init = 0.1;
