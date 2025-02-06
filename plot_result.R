@@ -26,3 +26,13 @@ ggplot(df, aes(x = b, y = beta_means)) +
   xlim(-0.2, 0.2) +
   ylim(-0.2, 0.2) +
   theme_minimal()
+
+# if no ggplot
+plot(df$b, df$beta_means, 
+     col = "blue", pch = 16, cex = 1.2,  # Blue points, solid circles
+     xlab = "Marginal SNP effect", 
+     ylab = "Estimate SNP effect", 
+     xlim = c(-0.2, 0.2), ylim = c(-0.2, 0.2),
+     main = "Scatter Plot")
+
+abline(0, 1, col = "red", lty = 2, lwd = 2)  # Dashed red line

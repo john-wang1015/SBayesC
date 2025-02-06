@@ -284,10 +284,10 @@ int main() {
             uhat = invLhs * rhs;
 
             // sample from pi should be good
-            logDelta_active = 0.5*(log(invLhs) - log(sigmaSq(i-1)) + uhat*rhs) + log(pi(i-1));
+            logDelta_active = 0.5*(logf(invLhs) - logf(sigmaSq(i-1)) + uhat*rhs) + log(pi(i-1));
             //logDelta_active = 0.5 * ((log(invLhs) - log(sigmaSq(i-1)) + uhat * rhs) / numSNP) + log(pi(i-1));
-            logDelta_inactive = log(1-pi(i-1));
-            pi_current = 1.0 / (1.0 + exp(logDelta_inactive - logDelta_active));
+            logDelta_inactive = logf(1-pi(i-1));
+            pi_current = 1.0 / (1.0 + expf(logDelta_inactive - logDelta_active));
 
             // this part looks ok
             delta = sample_bernoulli(pi_current);
