@@ -224,9 +224,9 @@ int main() {
     readBinTxtFile(binFilePath, numSNP, LD);
     readSummary(phenoFilePath, b, se, n ,numSNP);
 
-    unsigned n_iter = 10000;
-    float pi_init = 0.5;
-    float hsq_init = 0.5;
+    unsigned n_iter = 20000;
+    float pi_init = 0.1;
+    float hsq_init = 0.2;
     VectorXf gamma(2);
     gamma << 0, 1;
 
@@ -235,19 +235,22 @@ int main() {
     pi(0) = pi_init; 
     hsq(0) = hsq_init;
 
-    VectorXf scale = (1.0 / (numSNP * se.array().square())).sqrt(); 
+    //VectorXf scale = (1.0 / (numSNP * se.array().square())).sqrt(); 
     // scale SNP effect
     VectorXf bhat = b.array();// *scale.array();
 
     float vary = 1.0;
     float varg = hsq(0);
-    float vare = vary;
+    float vare = vary - varg;
     VectorXf sigmaSq = VectorXf::Zero(n_iter+1);
-    sigmaSq(0) = varg / (numSNP * pi(0));
+    sigmaSq(0) = varg; // / (numSNP * pi(0));
 
     float nub = 4.0f, nue = 4.0f;
-    float scaleb = (nub - 2) / nub * sigmaSq(0);
-    float scalee = (nue - 2) / nue * vare;
+    // need check if this is scale or not
+    //float scaleb = (nub - 2) / nub * sigmaSq(0);
+    //float scalee = (nue - 2) / nue * vare;
+    float scaleb = sigmaSq(0);
+    float scalee = vare;
 
     VectorXf beta = VectorXf::Zero(numSNP);
     MatrixXf beta_mcmc = MatrixXf::Zero(n_iter+1, numSNP);
@@ -273,15 +276,20 @@ int main() {
         numSnpDist_current << 0.0, 0.0;
 
         for (int j = 0; j < numSNP; j++){
+            // check this part, important
+            // the bug could in here
             beta_old = beta(j);
-            rhs = (bhatcorr(j) + beta_old)/ (vare/numSNP);
-            invLhs = 1.0/(1.0/(vare/numSNP) + invSigmaSq);
+            rhs = bhatcorr(j) + beta_old; // (vare/numSNP);
+            invLhs = 1.0 / (1.0 + invSigmaSq);//1.0/(1.0/(vare/numSNP) + invSigmaSq);
             uhat = invLhs * rhs;
 
+            // sample from pi should be good
             logDelta_active = 0.5*(log(invLhs) - log(sigmaSq(i-1)) + uhat*rhs) + log(pi(i-1));
+            //logDelta_active = 0.5 * ((log(invLhs) - log(sigmaSq(i-1)) + uhat * rhs) / numSNP) + log(pi(i-1));
             logDelta_inactive = log(1-pi(i-1));
             pi_current = 1.0 / (1.0 + exp(logDelta_inactive - logDelta_active));
 
+            // this part looks ok
             delta = sample_bernoulli(pi_current);
             if (delta == 1){
                 numSnpDist_current(1) += 1.0;
@@ -306,9 +314,9 @@ int main() {
         sigmaSq(i) = (ssq + nub*scaleb)/sigma_beta;
 
         varg = beta.dot(bhat - bhatcorr);
-        hsq(i) = varg / vary;
+        hsq(i) = varg / (varg + vare);
 
-        if (i % 500 == 0){
+        if (i % 1000 == 0){
         std::cout << std::fixed << std::setprecision(6);
         std::cout << std::left << std::setw(10) << pi(i) 
             << std::setw(10) << int(nnz(i-1)) 
@@ -320,9 +328,9 @@ int main() {
 
     }
 
-    int mean_value = static_cast<int>((nnz.tail(nnz.size() - 2000)).mean());
+    int mean_value = static_cast<int>((nnz.tail(nnz.size() - 10000)).mean());
     std::cout << "Mean nnz is: " << mean_value << std::endl;
-    std::cout << "Mean hsq is: " << (hsq.tail(hsq.size() - 2000)).mean() << std::endl;
+    std::cout << "Mean hsq is: " << (hsq.tail(hsq.size() - 10000)).mean() << std::endl;
 
     saveMatrixToBinary("ldm_data1_result.bin", beta_mcmc);
 
