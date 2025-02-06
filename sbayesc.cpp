@@ -224,7 +224,7 @@ int main() {
     readBinTxtFile(binFilePath, numSNP, LD);
     readSummary(phenoFilePath, b, se, n ,numSNP);
 
-    unsigned n_iter = 20000;
+    unsigned n_iter = 10000;
     float pi_init = 0.1;
     float hsq_init = 0.2;
     VectorXf gamma(2);
@@ -328,9 +328,9 @@ int main() {
 
     }
 
-    int mean_value = static_cast<int>((nnz.tail(nnz.size() - 10000)).mean());
+    int mean_value = static_cast<int>((nnz.tail(nnz.size() - 2000)).mean());
     std::cout << "Mean nnz is: " << mean_value << std::endl;
-    std::cout << "Mean hsq is: " << (hsq.tail(hsq.size() - 10000)).mean() << std::endl;
+    std::cout << "Mean hsq is: " << (hsq.tail(hsq.size() - 2000)).mean() << std::endl;
 
     saveMatrixToBinary("ldm_data1_result.bin", beta_mcmc);
 
