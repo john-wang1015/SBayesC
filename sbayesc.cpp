@@ -175,6 +175,22 @@ void saveMatrixToBinary(const std::string& filename, const Eigen::MatrixXf& matr
     file.close();
 }
 
+void recoverMatrix(MatrixXf& B, VectorXf& b, VectorXf& se, VectorXf& n, unsigned numSNP, MatrixXf& XTX, VectorXf& XTy) {
+    unsigned n_size = numSNP;
+    VectorXf diagonalElements(n_size);
+
+    for (unsigned j = 0; j < n_size; ++j) {
+        diagonalElements[j] = 1.0f / (se[j] + (b[j] * b[j] / n[j]));
+    }
+
+    MatrixXf D = diagonalElements.asDiagonal();
+
+    VectorXf D_sqrt_vec = D.diagonal().cwiseSqrt();
+    DiagonalMatrix<float, Dynamic> D_sqrt(D_sqrt_vec);
+    XTX = D_sqrt * B * D_sqrt;
+
+    XTy = D.diagonal().cwiseProduct(b);
+}
 
 float sample_normal(float mean, float stddev) {
     std::normal_distribution<float> norm_dist(mean, stddev);
@@ -224,26 +240,29 @@ int main() {
     readBinTxtFile(binFilePath, numSNP, LD);
     readSummary(phenoFilePath, b, se, n ,numSNP);
 
-    unsigned n_iter = 10000;
+    //MatrixXf XTX = Eigen::MatrixXf(numSNP, numSNP);
+    //VectorXf XTy = Eigen::VectorXf(numSNP);
+    //recoverMatrix(LD, b, se, n, numSNP, XTX, XTy);
+
+    unsigned n_iter = 20000;
     float pi_init = 0.1;
     float hsq_init = 0.2;
-    VectorXf gamma(2);
-    gamma << 0, 1;
 
     VectorXf pi = VectorXf::Zero(n_iter+1);               // store all pi value
     VectorXf hsq = VectorXf::Zero(n_iter+1);              // store all heritability value
     pi(0) = pi_init; 
     hsq(0) = hsq_init;
 
-    //VectorXf scale = (1.0 / (numSNP * se.array().square())).sqrt(); 
+    VectorXf scale = (1.0 / (numSNP * se.array().square())).sqrt(); 
     // scale SNP effect
-    VectorXf bhat = b.array();// *scale.array();
+    VectorXf bhat = b.array() * scale.array();
 
     float vary = 1.0;
     float varg = hsq(0);
     float vare = vary - varg;
     VectorXf sigmaSq = VectorXf::Zero(n_iter+1);
-    sigmaSq(0) = varg; // / (numSNP * pi(0));
+    // sigmaSq is varaince of SNP effect
+    sigmaSq(0) = varg/(numSNP * pi(0));
 
     float nub = 4.0f, nue = 4.0f;
     // need check if this is scale or not
@@ -279,13 +298,13 @@ int main() {
             // check this part, important
             // the bug could in here
             beta_old = beta(j);
-            rhs = bhatcorr(j) + beta_old; // (vare/numSNP);
-            invLhs = 1.0 / (1.0 + invSigmaSq);//1.0/(1.0/(vare/numSNP) + invSigmaSq);
+            rhs = (bhatcorr(j) + beta_old) / (vare / numSNP);;
+            invLhs = 1.0f / (1.0f / (vare / numSNP) + invSigmaSq);
+            //1.0 / (1.0 + invSigmaSq);
             uhat = invLhs * rhs;
 
             // sample from pi should be good
             logDelta_active = 0.5*(logf(invLhs) - logf(sigmaSq(i-1)) + uhat*rhs) + log(pi(i-1));
-            //logDelta_active = 0.5 * ((log(invLhs) - log(sigmaSq(i-1)) + uhat * rhs) / numSNP) + log(pi(i-1));
             logDelta_inactive = logf(1-pi(i-1));
             pi_current = 1.0 / (1.0 + expf(logDelta_inactive - logDelta_active));
 
@@ -294,7 +313,7 @@ int main() {
             if (delta == 1){
                 numSnpDist_current(1) += 1.0;
 
-                beta(j) = sample_normal(uhat, sqrt(invLhs));
+                beta(j) = sample_normal(uhat, vare*invLhs);
                 bhatcorr = bhatcorr.array() + LD.col(j).array()*(beta_old - beta(j));
                 ssq += (beta(j)*beta(j));
                 nnz(i-1) += 1;
@@ -305,7 +324,7 @@ int main() {
             }
         }
         
-        VectorXf beta_mcmc_sample = beta.array(); // / scale.array();
+        VectorXf beta_mcmc_sample = beta.array() / scale.array();
         beta_mcmc.row(i) = beta_mcmc_sample.transpose();
 
         pi(i) = sample_beta(numSnpDist_current(1) + 1, numSnpDist_current(0) + 1);
@@ -316,7 +335,7 @@ int main() {
         varg = beta.dot(bhat - bhatcorr);
         hsq(i) = varg / (varg + vare);
 
-        if (i % 1000 == 0){
+        if (i % 500 == 0){
         std::cout << std::fixed << std::setprecision(6);
         std::cout << std::left << std::setw(10) << pi(i) 
             << std::setw(10) << int(nnz(i-1)) 
@@ -328,9 +347,9 @@ int main() {
 
     }
 
-    int mean_value = static_cast<int>((nnz.tail(nnz.size() - 2000)).mean());
+    int mean_value = static_cast<int>((nnz.tail(nnz.size() - 10000)).mean());
     std::cout << "Mean nnz is: " << mean_value << std::endl;
-    std::cout << "Mean hsq is: " << (hsq.tail(hsq.size() - 2000)).mean() << std::endl;
+    std::cout << "Mean hsq is: " << (hsq.tail(hsq.size() - 10000)).mean() << std::endl;
 
     saveMatrixToBinary("ldm_data1_result.bin", beta_mcmc);
 
