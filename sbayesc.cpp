@@ -226,6 +226,26 @@ float sample_bernoulli(float p) {
     return bernoulli_dist(rng);
 }
 
+Vector2f sample_dirichlet(const Vector2f& numSnpDist_current) {
+    Vector2f gamma_samples;
+    float sumGamma = 0.0;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    // Sample from Gamma distribution for each component
+    for (int i = 0; i < 2; ++i) {
+        std::gamma_distribution<float> gammaDist(numSnpDist_current[i] + 1, 1.0);
+        gamma_samples[i] = gammaDist(gen);
+        sumGamma += gamma_samples[i];
+    }
+
+    // Normalize to get Dirichlet sample
+    gamma_samples /= sumGamma;  // In-place normalization
+
+    return gamma_samples;
+}
+
 int main() {
     unsigned numSNP;
     VectorXf b, se, n;
@@ -244,9 +264,9 @@ int main() {
     //VectorXf XTy = Eigen::VectorXf(numSNP);
     //recoverMatrix(LD, b, se, n, numSNP, XTX, XTy);
 
-    unsigned n_iter = 20000;
+    unsigned n_iter = 10000;
     float pi_init = 0.1;
-    float hsq_init = 0.2;
+    float hsq_init = 0.5;
 
     VectorXf pi = VectorXf::Zero(n_iter+1);               // store all pi value
     VectorXf hsq = VectorXf::Zero(n_iter+1);              // store all heritability value
@@ -254,22 +274,21 @@ int main() {
     hsq(0) = hsq_init;
 
     VectorXf scale = (1.0 / (numSNP * se.array().square())).sqrt(); 
+    //std::cout << scale.head(20) << std::endl;
     // scale SNP effect
     VectorXf bhat = b.array() * scale.array();
 
     float vary = 1.0;
     float varg = hsq(0);
-    float vare = vary - varg;
+    float vare = vary;
     VectorXf sigmaSq = VectorXf::Zero(n_iter+1);
     // sigmaSq is varaince of SNP effect
     sigmaSq(0) = varg/(numSNP * pi(0));
 
     float nub = 4.0f, nue = 4.0f;
     // need check if this is scale or not
-    //float scaleb = (nub - 2) / nub * sigmaSq(0);
-    //float scalee = (nue - 2) / nue * vare;
-    float scaleb = sigmaSq(0);
-    float scalee = vare;
+    float scaleb = (nub - 2) / nub * sigmaSq(0);
+    float scalee = (nue - 2) / nue * vare;
 
     VectorXf beta = VectorXf::Zero(numSNP);
     MatrixXf beta_mcmc = MatrixXf::Zero(n_iter+1, numSNP);
@@ -282,43 +301,43 @@ int main() {
     float logDelta_active, logDelta_inactive, pi_current, delta;
     float sigma_beta, sigma_epsilon;
     
-    std::cout << std::left << std::setw(10) << "pi" 
+    std::cout << std::left << std::setw(10) << "Iteration"
+         << std::left << std::setw(10) << "pi" 
          << std::setw(10) << "nnz" 
          << std::setw(15) << "sigma_beta" 
          << std::setw(10) << "hsq" << std::endl;
     
     for (int i = 1; i < n_iter; i++){
         invSigmaSq = 1.0 / sigmaSq(i-1);
-        nnz(i-1) = 0;
+        //nnz(i-1) = 0;
         ssq = 0;
-        Vector2f numSnpDist_current;
-        numSnpDist_current << 0.0, 0.0;
+        VectorXf numSnpDist_current = VectorXf::Zero(2);
+        //numSnpDist_current << 0, 0;
 
         for (int j = 0; j < numSNP; j++){
             // check this part, important
             // the bug could in here
             beta_old = beta(j);
             rhs = (bhatcorr(j) + beta_old) / (vare / numSNP);;
-            invLhs = 1.0f / (1.0f / (vare / numSNP) + invSigmaSq);
-            //1.0 / (1.0 + invSigmaSq);
+            invLhs = 1.0f / (1.0f/(vare/numSNP) + invSigmaSq);
             uhat = invLhs * rhs;
 
             // sample from pi should be good
-            logDelta_active = 0.5*(logf(invLhs) - logf(sigmaSq(i-1)) + uhat*rhs) + log(pi(i-1));
-            logDelta_inactive = logf(1-pi(i-1));
-            pi_current = 1.0 / (1.0 + expf(logDelta_inactive - logDelta_active));
+            logDelta_active = 0.5*(logf(invLhs) - logf(sigmaSq(i-1)) + uhat*rhs) + logf(pi(i-1));
+            logDelta_inactive = logf(1.0-pi(i-1)); 
+            pi_current  = 1.0 / (expf(logDelta_inactive - logDelta_active));
 
             // this part looks ok
             delta = sample_bernoulli(pi_current);
             if (delta == 1){
-                numSnpDist_current(1) += 1.0;
+                numSnpDist_current(1) += 1;
 
                 beta(j) = sample_normal(uhat, vare*invLhs);
                 bhatcorr = bhatcorr.array() + LD.col(j).array()*(beta_old - beta(j));
                 ssq += (beta(j)*beta(j));
                 nnz(i-1) += 1;
             }else{
-                numSnpDist_current(0) += 1.0;
+                numSnpDist_current(0) += 1;
                 bhatcorr = bhatcorr.array() + LD.col(j).array()*beta_old;
                 beta(j) = 0.0;
             }
@@ -327,17 +346,20 @@ int main() {
         VectorXf beta_mcmc_sample = beta.array() / scale.array();
         beta_mcmc.row(i) = beta_mcmc_sample.transpose();
 
-        pi(i) = sample_beta(numSnpDist_current(1) + 1, numSnpDist_current(0) + 1);
+        //Vector2f dirichlet_sample = sample_dirichlet(numSnpDist_current);
+        //pi(i) = dirichlet_sample(1);
+        pi(i) = sample_beta(numSnpDist_current(0) + 1.0, numSnpDist_current(1) + 1.0);
 
-        sigma_beta = sample_scaled_inv_chi_squared(1, nnz(i-1)+nub);
+        sigma_beta = sample_scaled_inv_chi_squared(1.0, nnz(i-1)+nub);
         sigmaSq(i) = (ssq + nub*scaleb)/sigma_beta;
 
         varg = beta.dot(bhat - bhatcorr);
-        hsq(i) = varg / (varg + vare);
+        hsq(i) = varg /vary;
 
-        if (i % 500 == 0){
+        if (i % 50 == 0){
         std::cout << std::fixed << std::setprecision(6);
-        std::cout << std::left << std::setw(10) << pi(i) 
+        std::cout << std::left << std::setw(10) << i
+            << std::left << std::setw(10) << pi(i) 
             << std::setw(10) << int(nnz(i-1)) 
             << std::setw(15) << sigmaSq(i) 
             << std::setw(10) << hsq(i) << std::endl;
@@ -347,9 +369,10 @@ int main() {
 
     }
 
-    int mean_value = static_cast<int>((nnz.tail(nnz.size() - 10000)).mean());
-    std::cout << "Mean nnz is: " << mean_value << std::endl;
-    std::cout << "Mean hsq is: " << (hsq.tail(hsq.size() - 10000)).mean() << std::endl;
+    //std::cout << "Finish the loop" << std::endl;
+    //int mean_value = static_cast<int>((nnz.tail(nnz.size() - 1000)).mean());
+    //std::cout << "Mean nnz is: " << mean_value << std::endl;
+    //std::cout << "Mean hsq is: " << (hsq.tail(hsq.size() - 1000)).mean() << std::endl;
 
     saveMatrixToBinary("ldm_data1_result.bin", beta_mcmc);
 
