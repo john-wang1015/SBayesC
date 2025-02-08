@@ -11,7 +11,7 @@
 
 library(MCMCpack)
 
-sbayesr = function(b, se, n, R, niter = 10000, gamma = c(0, 1), startPi = c(0.9, 0.01), startH2 = 0.5){
+sbayesr = function(b, se, n, R, niter = 10000, gamma = c(0, 1), startPi = c(0.9, 0.1), startH2 = 0.5){
   m     = nrow(R)          # number of SNPs
   ndist = length(startPi)  # number of mixture distributions
   pi    = startPi          # starting value for pi
@@ -47,12 +47,25 @@ sbayesr = function(b, se, n, R, niter = 10000, gamma = c(0, 1), startPi = c(0.9,
       rhs = (bhatcorr[i] + oldSample)/(vare/n)
       invLhs = 1.0/(1/c(vare/n) + invSigmaSq)
       uhat = invLhs*c(rhs)
+      if (iter <= 2){
+        if (i <= 2){
+          print(iter)
+          print(rhs)
+          print(invLhs)
+          print(uhat)}
+        }
       
       # sampling mixture distribution membership
       logDelta = 0.5*(log(invLhs) - logSigmaSq + uhat*c(rhs)) + logPi
       logDelta[1] = logPi[1];
       for (k in 1:ndist) {
         probDelta[k] = 1.0/sum(exp(logDelta - logDelta[k]))
+      }
+      
+      if (iter <= 2){
+        if (i <= 2){
+          print(logDelta)
+          print(probDelta)}
       }
       
       delta = sample(1:ndist, 1, prob = probDelta)
@@ -72,6 +85,7 @@ sbayesr = function(b, se, n, R, niter = 10000, gamma = c(0, 1), startPi = c(0.9,
     
     # sampling pi
     pi = rdirichlet(1, nsnpDist + 1)
+    
     
     # sampling SNP effect variance
     sigmaSq = (ssq + nub*scaleb)/rchisq(1, nnz+nub)
