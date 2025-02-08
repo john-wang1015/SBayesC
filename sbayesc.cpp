@@ -13,7 +13,7 @@ using namespace Eigen;
 using namespace std;
 
 std::random_device rd;
-std::mt19937 rng(rd());
+std::mt19937 rng(123);
 
 void readBinFullLD(const std::string& binFilePath, unsigned &numSNP, MatrixXf &B) {
     auto start = std::chrono::high_resolution_clock::now(); // Start timing
@@ -202,7 +202,7 @@ float sample_uniform() {
     return uniform_dist(rng);
 }
 
-float sample_chi_squared(float dof) {
+float sample_chisq(float dof) {
     std::chi_squared_distribution<float> chi_dist(dof);
     return chi_dist(rng);
 }
@@ -222,8 +222,8 @@ float sample_beta(float alpha, float beta) {
 }
 
 float sample_bernoulli(float p) {
-    std::bernoulli_distribution bernoulli_dist(p);
-    return bernoulli_dist(rng);
+    std::discrete_distribution<int> dist({ 1 - p, p });
+    return dist(rng);
 }
 
 Vector2f sample_dirichlet(const Vector2f& numSnpDist_current) {
@@ -314,35 +314,34 @@ int main() {
         VectorXf numSnpDist_current = VectorXf::Zero(2);
         //numSnpDist_current << 0, 0;
 
-        for (int j = 0; j < numSNP; j++){
+        for (int j = 0; j < numSNP; j++) {
             // check this part, important
             // the bug could in here
             beta_old = beta(j);
-            rhs = (bhatcorr(j) + beta_old) / (vare / numSNP);;
-            invLhs = 1.0f / (1.0f/(vare/numSNP) + invSigmaSq);
+            rhs = (bhatcorr(j) + beta_old) / (vare / numSNP);
+            invLhs = 1.0f / (1.0f / (vare / numSNP) + invSigmaSq);
             uhat = invLhs * rhs;
 
             // sample from pi should be good
-            logDelta_active = 0.5*(logf(invLhs) - logf(sigmaSq(i-1)) + uhat*rhs) + logf(pi(i-1));
-            logDelta_inactive = logf(1.0-pi(i-1)); 
-            pi_current  = 1.0 / (expf(logDelta_inactive - logDelta_active));
+            logDelta_active = 0.5f*(log(invLhs) - log(sigmaSq(i-1)) + uhat*rhs) + log(pi(i-1));
+            logDelta_inactive = log(1.0f-pi(i-1)); 
+            pi_current  = 1.0 / (1.0 + exp(logDelta_inactive - logDelta_active));
 
             // this part looks ok
             delta = sample_bernoulli(pi_current);
-            if (delta == 1){
+            if (delta > 0){
                 numSnpDist_current(1) += 1;
-
-                beta(j) = sample_normal(uhat, vare*invLhs);
+                beta(j) = sample_normal(uhat, sqrt(invLhs));
                 bhatcorr = bhatcorr.array() + LD.col(j).array()*(beta_old - beta(j));
-                ssq += (beta(j)*beta(j));
-                nnz(i-1) += 1;
+                ssq = ssq + (beta(j)*beta(j));
+                nnz(i-1) = nnz(i - 1) + 1;
             }else{
                 numSnpDist_current(0) += 1;
                 bhatcorr = bhatcorr.array() + LD.col(j).array()*beta_old;
                 beta(j) = 0.0;
             }
         }
-        
+
         VectorXf beta_mcmc_sample = beta.array() / scale.array();
         beta_mcmc.row(i) = beta_mcmc_sample.transpose();
 
@@ -350,13 +349,13 @@ int main() {
         //pi(i) = dirichlet_sample(1);
         pi(i) = sample_beta(numSnpDist_current(0) + 1.0, numSnpDist_current(1) + 1.0);
 
-        sigma_beta = sample_scaled_inv_chi_squared(1.0, nnz(i-1)+nub);
+        sigma_beta = sample_chisq(nnz(i-1) + nub);
         sigmaSq(i) = (ssq + nub*scaleb)/sigma_beta;
 
         varg = beta.dot(bhat - bhatcorr);
         hsq(i) = varg /vary;
 
-        if (i % 50 == 0){
+        if (i % 100 == 0){
         std::cout << std::fixed << std::setprecision(6);
         std::cout << std::left << std::setw(10) << i
             << std::left << std::setw(10) << pi(i) 
