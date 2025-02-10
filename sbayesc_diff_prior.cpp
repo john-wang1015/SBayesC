@@ -264,7 +264,7 @@ int main() {
             uhat = invLhs * rhs;
 
             logDelta_active = 0.5f*(log(invLhs) - log(sigmaSq(i-1)) + uhat*rhs) + log(pi(i-1));
-            logDelta_inactive = log(1.0f-pi(i-1)); 
+            logDelta_inactive = log(1.0f-pi(i-1)); // change this line
             pi_current  = 1.0 / (1.0 + exp(logDelta_inactive - logDelta_active));
 
             delta = sample_bernoulli(pi_current);
@@ -277,8 +277,8 @@ int main() {
                 nnz(i-1) = nnz(i - 1) + 1;
             }else{
                 numSnpDist_current(0) += 1;
-                bhatcorr = bhatcorr.array() + LD.col(j).array()*beta_old;
-                beta(j) = 0.0;
+                bhatcorr = bhatcorr.array() + LD.col(j).array()*beta_old;  // change this line
+                beta(j) = 0.0;  // change this line
             }
         }
         

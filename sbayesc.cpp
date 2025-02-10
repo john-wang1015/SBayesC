@@ -55,7 +55,7 @@ void readBinFullLD(const std::string& binFilePath, unsigned &numSNP, MatrixXf &B
 
 void readBinTxtFile(const std::string& binFilePath, unsigned& numSNP, Eigen::MatrixXf& B) {
     std::ifstream file(binFilePath);
-    if (!file.is_open()) {
+    if (!file.is_open()) { 
         std::cerr << "Error: Cannot open file " << binFilePath << std::endl;
         return;
     }
@@ -260,10 +260,6 @@ int main() {
     readBinTxtFile(binFilePath, numSNP, LD);
     readSummary(phenoFilePath, b, se, n ,numSNP);
 
-    //MatrixXf XTX = Eigen::MatrixXf(numSNP, numSNP);
-    //VectorXf XTy = Eigen::VectorXf(numSNP);
-    //recoverMatrix(LD, b, se, n, numSNP, XTX, XTy);
-
     unsigned n_iter = 10000;
     float pi_init = 0.1;
     float hsq_init = 0.5;
@@ -332,6 +328,7 @@ int main() {
             if (delta > 0){
                 numSnpDist_current(1) += 1;
                 beta(j) = sample_normal(uhat, sqrt(invLhs));
+                 
                 bhatcorr = bhatcorr.array() + LD.col(j).array()*(beta_old - beta(j));
                 ssq = ssq + (beta(j)*beta(j));
                 nnz(i-1) = nnz(i - 1) + 1;
@@ -341,13 +338,11 @@ int main() {
                 beta(j) = 0.0;
             }
         }
-
+        
         VectorXf beta_mcmc_sample = beta.array() / scale.array();
         beta_mcmc.row(i) = beta_mcmc_sample.transpose();
 
-        //Vector2f dirichlet_sample = sample_dirichlet(numSnpDist_current);
-        //pi(i) = dirichlet_sample(1);
-        pi(i) = sample_beta(numSnpDist_current(0) + 1.0, numSnpDist_current(1) + 1.0);
+        pi(i) = sample_beta(numSnpDist_current(1), numSnpDist_current(0));
 
         sigma_beta = sample_chisq(nnz(i-1) + nub);
         sigmaSq(i) = (ssq + nub*scaleb)/sigma_beta;
@@ -355,7 +350,7 @@ int main() {
         varg = beta.dot(bhat - bhatcorr);
         hsq(i) = varg /vary;
 
-        if (i % 100 == 0){
+        if (i % 500 == 0){
         std::cout << std::fixed << std::setprecision(6);
         std::cout << std::left << std::setw(10) << i
             << std::left << std::setw(10) << pi(i) 
@@ -367,11 +362,6 @@ int main() {
         keptIter.row(i-1) << pi(i), int(nnz(i-1)), sigmaSq(i), hsq(i);
 
     }
-
-    //std::cout << "Finish the loop" << std::endl;
-    //int mean_value = static_cast<int>((nnz.tail(nnz.size() - 1000)).mean());
-    //std::cout << "Mean nnz is: " << mean_value << std::endl;
-    //std::cout << "Mean hsq is: " << (hsq.tail(hsq.size() - 1000)).mean() << std::endl;
 
     saveMatrixToBinary("ldm_data1_result.bin", beta_mcmc);
 

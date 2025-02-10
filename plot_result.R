@@ -30,46 +30,48 @@ plot(true_beta, t(beta_means),
      ylim = c(-0.2,0.2))
 abline(0, 1, col = "red", lty = 2, lwd = 2) 
 
-plot(index, t(beta_means), 
-     col = "blue", pch = 16, cex = 1.2,  
-     xlab = "Index", 
-     ylab = "b", 
+plot(index, t(beta_means),
+     col = "blue", pch = 16, cex = 1.2,
+     xlab = "Index",
+     ylab = "b",
      main = "c++ code",
      ylim = c(-0.2,0.2))
 
-points(gwas_data$pos, gwas_data$true_b, 
+points(gwas_data$pos, gwas_data$true_b,
        col = "red", pch = 16, cex = 1.2)
 
-legend("topright", legend = c("Estimated b", "True b"), 
+legend("topright", legend = c("Estimated b", "True b"),
        col = c("blue", "red"), pch = 16)
 
 #########jz code results
-beta_means <- read.table("betaMean_results.ma", header = FALSE, sep = "\t", stringsAsFactors = FALSE)
-gwas_data <- read.table("GWASss.ma", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-b <- gwas_data['b']
+beta_means_r <- read.table("betaMean_results.ma", header = FALSE, sep = "\t", stringsAsFactors = FALSE)
+gwas_data_r <- read.table("GWASss.ma", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+b_r <- gwas_data_r['b']
 
-true_beta = rep(0, 1000)
-true_beta[gwas_data$pos] = gwas_data$true_b
+true_beta_r = rep(0, 1000)
+true_beta_r[gwas_data_r$pos] = gwas_data_r$true_b
 
-df <- data.frame(b = b, beta_means = beta_means)  # Create a data frame
+df <- data.frame(b = b_r, beta_means = beta_means_r)  # Create a data frame
 
-plot(true_beta, t(beta_means), 
+plot(true_beta_r, t(beta_means_r), 
      col = "blue", pch = 16, cex = 1.2,  
-     xlab = "Index", 
+     xlab = "b true", 
      ylab = "b", 
      main = "JZ R code",
      ylim = c(-0.2,0.2))
 abline(0, 1, col = "red", lty = 2, lwd = 2)  # Dashed red line
 
-plot(index, t(beta_means), 
-     col = "blue", pch = 16, cex = 1.2,  
-     xlab = "Index", 
-     ylab = "b", 
-     main = "JZ R code",
-     ylim = c(-0.2,0.2))
+# plot(index, t(beta_means), 
+#      col = "blue", pch = 16, cex = 1.2,  
+#      xlab = "Index", 
+#      ylab = "b", 
+#      main = "JZ R code",
+#      ylim = c(-0.2,0.2))
+# 
+# 
+# points(gwas_data$pos, gwas_data$true_b, 
+#        col = "red", pch = 16, cex = 1.2)
+# 
+# legend("topright", legend = c("Estimated b", "True b"), 
+#        col = c("blue", "red"), pch = 16)
 
-points(gwas_data$pos, gwas_data$true_b, 
-       col = "red", pch = 16, cex = 1.2)
-
-legend("topright", legend = c("Estimated b", "True b"), 
-       col = c("blue", "red"), pch = 16)
