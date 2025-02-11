@@ -222,8 +222,9 @@ int main() {
     pi(0) = pi_init; 
     hsq(0) = hsq_init;
 
-    VectorXf scale = (1.0 / (numSNP * se.array().square())).sqrt(); 
-    VectorXf bhat = b.array() * scale.array();
+    //VectorXf scale = (1.0 / (numSNP * se.array().square())).sqrt(); 
+    //VectorXf bhat = b.array() * scale.array();
+    VectorXf bhat = b;
 
     float vary = 1.0;
     float varg = hsq(0);
@@ -259,7 +260,8 @@ int main() {
 
         for (int j = 0; j < numSNP; j++) {
             beta_old = beta(j);
-            rhs = (bhatcorr(j) + beta_old) / (vare / numSNP);
+            //rhs = (bhatcorr(j) + beta_old) / (vare / numSNP);
+            rhs = bhatcorr(j) + beta_old;
             invLhs = 1.0f / (1.0f / (vare / numSNP) + invSigmaSq);
             uhat = invLhs * rhs;
 
@@ -280,15 +282,21 @@ int main() {
                 bhatcorr = bhatcorr.array() + LD.col(j).array()*beta_old;
                 beta(j) = 0.0;
             }
+
+            vare = (bhatcorr - bhat).squaredNorm() / numSNP;
+
         }
         
-        VectorXf beta_mcmc_sample = beta.array() / scale.array();
+        VectorXf beta_mcmc_sample = beta.array();// / scale.array();
         beta_mcmc.row(i) = beta_mcmc_sample.transpose();
 
         pi(i) = sample_beta(numSnpDist_current(1), numSnpDist_current(0));
 
+        //sigma_beta = sample_chisq(nnz(i-1) + nub);
+        //sigmaSq(i) = (ssq + nub*scaleb)/sigma_beta;
+
         sigma_beta = sample_chisq(nnz(i-1) + nub);
-        sigmaSq(i) = (ssq + nub*scaleb)/sigma_beta;
+        sigmaSq(i) = (ssq / numSNP + nub * scaleb) / sigma_beta;
 
         varg = beta.dot(bhat - bhatcorr);
         hsq(i) = varg /vary;
@@ -306,7 +314,7 @@ int main() {
 
     }
 
-    saveMatrixToBinary("ldm_data1_result.bin", beta_mcmc);
+    saveMatrixToBinary("ldm_data1_I_result.bin", beta_mcmc);
 
     return 0;
 };
