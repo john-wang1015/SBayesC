@@ -266,7 +266,7 @@ int main() {
             uhat_weakAct = invLhs_weakAct * rhs;
 
             logDelta_active = 0.5f*(log(invLhs) - log(sigmaSq(i-1)) + uhat*rhs) + log(pi(i-1));
-            logDelta_inactive = 0.5f*(log(invLhs_weakAct) - log(numSNP) + uhat_weakAct*rhs) + log(1.0 - pi(i-1)); // change this line
+            logDelta_inactive = -0.5f * log(1.0/numSNP) + log(1.0f - pi(i-1));
             pi_current  = 1.0 / (1.0 + exp(logDelta_inactive - logDelta_active));
 
             delta = sample_bernoulli(pi_current);
@@ -297,7 +297,7 @@ int main() {
         varg = beta.dot(bhat - bhatcorr);
         hsq(i) = varg /vary;
 
-        if (i % 1 == 0){
+        if (i % 100 == 0){
         std::cout << std::fixed << std::setprecision(6);
         std::cout << std::left << std::setw(10) << i
             << std::left << std::setw(10) << pi(i) 
@@ -310,7 +310,7 @@ int main() {
 
     }
 
-    saveMatrixToBinary("ldm_data1_result.bin", beta_mcmc);
+    saveMatrixToBinary("ldm_data1_diff_prior_result.bin", beta_mcmc);
 
     return 0;
 };
