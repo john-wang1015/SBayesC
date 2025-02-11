@@ -192,6 +192,32 @@ void recoverMatrix(MatrixXf& B, VectorXf& b, VectorXf& se, VectorXf& n, unsigned
     XTy = D.diagonal().cwiseProduct(b);
 }
 
+void writeVectorsToBinary(const std::string& filename,
+    const Eigen::VectorXf& sigmaSq,
+    const Eigen::VectorXd& nnz) {
+    std::ofstream file(filename, std::ios::binary);
+    if (!file) {
+        std::cerr << "Error opening file for writing: " << filename << std::endl;
+        return;
+    }
+
+    // Write size of sigmaSq
+    int sigmaSqSize = sigmaSq.size();
+    file.write(reinterpret_cast<const char*>(&sigmaSqSize), sizeof(int));
+
+    // Write data of sigmaSq
+    file.write(reinterpret_cast<const char*>(sigmaSq.data()), sigmaSqSize * sizeof(float));
+
+    // Write size of nnz
+    int nnzSize = nnz.size();
+    file.write(reinterpret_cast<const char*>(&nnzSize), sizeof(int));
+
+    // Write data of nnz
+    file.write(reinterpret_cast<const char*>(nnz.data()), nnzSize * sizeof(double));
+
+    file.close();
+}
+
 float sample_normal(float mean, float stddev) {
     std::normal_distribution<float> norm_dist(mean, stddev);
     return norm_dist(rng);
@@ -245,6 +271,7 @@ Vector2f sample_dirichlet(const Vector2f& numSnpDist_current) {
 
     return gamma_samples;
 }
+
 
 int main() {
     unsigned numSNP;
@@ -364,6 +391,7 @@ int main() {
     }
 
     saveMatrixToBinary("ldm_data2_result.bin", beta_mcmc);
+    writeVectorsToBinary("nnz_ssq_result2.bin", sigmaSq, nnz);
 
     return 0;
 };

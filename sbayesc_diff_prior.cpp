@@ -175,6 +175,33 @@ void saveMatrixToBinary(const std::string& filename, const Eigen::MatrixXf& matr
     file.close();
 }
 
+void writeVectorsToBinary(const std::string& filename,
+    const Eigen::VectorXf& sigmaSq,
+    const Eigen::VectorXd& nnz) {
+    std::ofstream file(filename, std::ios::binary);
+    if (!file) {
+        std::cerr << "Error opening file for writing: " << filename << std::endl;
+        return;
+    }
+
+    // Write size of sigmaSq
+    int sigmaSqSize = sigmaSq.size();
+    file.write(reinterpret_cast<const char*>(&sigmaSqSize), sizeof(int));
+
+    // Write data of sigmaSq
+    file.write(reinterpret_cast<const char*>(sigmaSq.data()), sigmaSqSize * sizeof(float));
+
+    // Write size of nnz
+    int nnzSize = nnz.size();
+    file.write(reinterpret_cast<const char*>(&nnzSize), sizeof(int));
+
+    // Write data of nnz
+    file.write(reinterpret_cast<const char*>(nnz.data()), nnzSize * sizeof(double));
+
+    file.close();
+}
+
+
 float sample_normal(float mean, float stddev) {
     std::normal_distribution<float> norm_dist(mean, stddev);
     return norm_dist(rng);
@@ -207,7 +234,7 @@ int main() {
     //std::string binFilePath = "1000G_eur_chr22.ldm.full.bin";
     //std::string phenoFilePath = "sim_1.ma";
     std::string binFilePath = "ldm_data1.ma";
-    std::string phenoFilePath = "GWASss.ma";
+    std::string phenoFilePath = "GWASss_data1.ma";
 
     //readBinFullLD(binFilePath, numSNP, LD);
     readBinTxtFile(binFilePath, numSNP, LD);
@@ -261,9 +288,7 @@ int main() {
             beta_old = beta(j);
             rhs = (bhatcorr(j) + beta_old) / (vare / numSNP);
             invLhs = 1.0f / (1.0f / (vare / numSNP) + invSigmaSq);
-            invLhs_weakAct = 1.0f / (1.0f / (vare / numSNP) + numSNP);
             uhat = invLhs * rhs;
-            uhat_weakAct = invLhs_weakAct * rhs;
 
             logDelta_active = 0.5f*(log(invLhs) - log(sigmaSq(i-1)) + uhat*rhs) + log(pi(i-1));
             logDelta_inactive = -0.5f * log(1.0/numSNP) + log(1.0f - pi(i-1));
@@ -311,6 +336,7 @@ int main() {
     }
 
     saveMatrixToBinary("ldm_data1_diff_prior_result.bin", beta_mcmc);
+    writeVectorsToBinary("nnz_ssq_result1_diff_prior.bin", sigmaSq, nnz);
 
     return 0;
 };

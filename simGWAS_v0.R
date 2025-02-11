@@ -23,7 +23,7 @@ M <- 3000
 r <- 0.9 # auto-regressive correlation : corr(X_i,X_j) = r^|i-j|
 ldm <- outer(1:M,1:M,FUN = function(i,j) r**abs(i-j))
 
-tt <- system.time( GWASss <- simGWAS(N=1e5,hsq=0.2,m=3,M=3000,R=ldm) )
+tt <- system.time( GWASss <- simGWAS(N=1e5,hsq=0.2,m=5,M=3000,R=ldm) )
 
 write.table(GWASss, file = "GWASss_data2.ma", sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)
 #save(ldm, file = "ldm_data.RData")
