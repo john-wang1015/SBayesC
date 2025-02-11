@@ -11,15 +11,15 @@ read_matrix_bin <- function(filename) {
   matrix(data, nrow = rows, ncol = cols, byrow = FALSE)  
 }
 
-beta_mcmc <- read_matrix_bin("ldm_data1_result.bin")
+beta_mcmc <- read_matrix_bin("ldm_data2_result.bin")
 beta_means <- colMeans(beta_mcmc) 
-gwas_data <- read.table("GWASss.ma", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+gwas_data <- read.table("GWASss_data2.ma", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
 b <- gwas_data['b']
 
-index = 1:1000
+index = 1:3000
 
-true_beta = rep(0, 1000)
-true_beta[gwas_data$pos] = gwas_data$true_b
+true_beta = rep(0, 3000)
+true_beta[gwas_data$pos[1:3]] = gwas_data$true_b[1:3]
 df <- data.frame(b = b, beta_means = beta_means)  
 
 plot(true_beta, t(beta_means), 
@@ -35,9 +35,9 @@ plot(index, t(beta_means),
      xlab = "Index",
      ylab = "b",
      main = "c++ code",
-     ylim = c(-0.2,0.2))
+     ylim = c(-0.5,0.5))
 
-points(gwas_data$pos, gwas_data$true_b,
+points(gwas_data$pos[1:3], gwas_data$true_b[1:3],
        col = "red", pch = 16, cex = 1.2)
 
 legend("topright", legend = c("Estimated b", "True b"),

@@ -61,7 +61,7 @@ void readBinTxtFile(const std::string& binFilePath, unsigned& numSNP, Eigen::Mat
     }
 
     std::string line;
-    numSNP = 1000;  // Expected matrix size
+    numSNP = 3000;  // Expected matrix size
     B = Eigen::MatrixXf(numSNP, numSNP);
 
     unsigned row = 0;
@@ -253,8 +253,8 @@ int main() {
 
     //std::string binFilePath = "1000G_eur_chr22.ldm.full.bin";
     //std::string phenoFilePath = "sim_1.ma";
-    std::string binFilePath = "ldm_data1.ma";
-    std::string phenoFilePath = "GWASss.ma";
+    std::string binFilePath = "ldm_data2.ma";
+    std::string phenoFilePath = "GWASss_data2.ma";
 
     //readBinFullLD(binFilePath, numSNP, LD);
     readBinTxtFile(binFilePath, numSNP, LD);
@@ -355,7 +355,7 @@ int main() {
         std::cout << std::left << std::setw(10) << i
             << std::left << std::setw(10) << pi(i) 
             << std::setw(10) << int(nnz(i-1)) 
-            << std::setw(15) << sigmaSq(i) 
+            << std::setw(15) << sigmaSq(i)
             << std::setw(10) << hsq(i) << std::endl;
         }
 
@@ -363,7 +363,7 @@ int main() {
 
     }
 
-    saveMatrixToBinary("ldm_data1_result.bin", beta_mcmc);
+    saveMatrixToBinary("ldm_data2_result.bin", beta_mcmc);
 
     return 0;
 };
