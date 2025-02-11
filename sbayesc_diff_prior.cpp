@@ -242,7 +242,7 @@ int main() {
     MatrixXf keptIter = MatrixXf::Zero(n_iter, 4);
     float invSigmaSq,ssq;
     VectorXd nnz = VectorXd::Zero(n_iter);
-    float beta_old, rhs, invLhs, uhat;
+    float beta_old, rhs, invLhs, invLhs_weakAct, uhat, uhat_weakAct;
     float logDelta_active, logDelta_inactive, pi_current, delta;
     float sigma_beta, sigma_epsilon;
     
@@ -261,10 +261,12 @@ int main() {
             beta_old = beta(j);
             rhs = (bhatcorr(j) + beta_old) / (vare / numSNP);
             invLhs = 1.0f / (1.0f / (vare / numSNP) + invSigmaSq);
+            invLhs_weakAct = 1.0f / (1.0f / (vare / numSNP) + numSNP);
             uhat = invLhs * rhs;
+            uhat_weakAct = invLhs_weakAct * rhs;
 
             logDelta_active = 0.5f*(log(invLhs) - log(sigmaSq(i-1)) + uhat*rhs) + log(pi(i-1));
-            logDelta_inactive = log(1.0f-pi(i-1)); // change this line
+            logDelta_inactive = 0.5f*(log(invLhs_weakAct) - log(numSNP) + uhat_weakAct*rhs) + log(1.0 - pi(i-1)); // change this line
             pi_current  = 1.0 / (1.0 + exp(logDelta_inactive - logDelta_active));
 
             delta = sample_bernoulli(pi_current);
@@ -277,8 +279,10 @@ int main() {
                 nnz(i-1) = nnz(i - 1) + 1;
             }else{
                 numSnpDist_current(0) += 1;
-                bhatcorr = bhatcorr.array() + LD.col(j).array()*beta_old;  // change this line
-                beta(j) = 0.0;  // change this line
+                
+                bhatcorr = bhatcorr.array() + LD.col(j).array()*beta_old; 
+
+                beta(j) = sample_normal(0.0, sqrt(1/numSNP));
             }
         }
         
@@ -293,7 +297,7 @@ int main() {
         varg = beta.dot(bhat - bhatcorr);
         hsq(i) = varg /vary;
 
-        if (i % 500 == 0){
+        if (i % 1 == 0){
         std::cout << std::fixed << std::setprecision(6);
         std::cout << std::left << std::setw(10) << i
             << std::left << std::setw(10) << pi(i) 
