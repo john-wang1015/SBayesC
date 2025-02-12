@@ -193,8 +193,8 @@ read_sigmaSq_nnz_from_bin <- function(file_path) {
 }
 
 # Read files
-df1 <- read_sigmaSq_nnz_from_bin("nnz_ssq_result1.bin")
-df2 <- read_sigmaSq_nnz_from_bin("nnz_ssq_result1_diff_prior.bin")
+df1 <- read_sigmaSq_nnz_from_bin("nnz_ssq_result3.bin")
+df2 <- read_sigmaSq_nnz_from_bin("nnz_ssq_result3_diff_prior.bin")
 
 # Verify sizes
 nnz1 = df1$nnz[2000:10000]
@@ -217,4 +217,4 @@ abline(v = 100, col = "black", lwd = 4, lty = 2)  # Dashed black line
 # Add legend
 legend("topleft", legend = c("NNZ from Model 1", "NNZ from Model 2", "True NNZ = 100"), 
        col = c("blue", "red", "black"), lwd = 4, lty = c(1, 1, 2))
-quartz.save("compare_m1_m2_nnz.png", type = "png", width = 10, height = 10)
+#quartz.save("compare_m1_m2_nnz.png", type = "png", width = 10, height = 10)
