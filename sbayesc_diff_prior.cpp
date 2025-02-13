@@ -61,7 +61,7 @@ void readBinTxtFile(const std::string& binFilePath, unsigned& numSNP, Eigen::Mat
     }
 
     std::string line;
-    numSNP = 1000;  // Expected matrix size
+    numSNP = 2000;  // Expected matrix size
     B = Eigen::MatrixXf(numSNP, numSNP);
 
     unsigned row = 0;
@@ -230,11 +230,12 @@ int main() {
     unsigned numSNP;
     VectorXf b, se, n;
     MatrixXf LD;
+    float n_size = 100000.0;
 
     //std::string binFilePath = "1000G_eur_chr22.ldm.full.bin";
     //std::string phenoFilePath = "sim_1.ma";
-    std::string binFilePath = "ldm_data1.ma";
-    std::string phenoFilePath = "GWASss_data1.ma";
+    std::string binFilePath = "ldm_data3.ma";
+    std::string phenoFilePath = "GWASss_data3.ma";
 
     //readBinFullLD(binFilePath, numSNP, LD);
     readBinTxtFile(binFilePath, numSNP, LD);
@@ -291,7 +292,7 @@ int main() {
             uhat = invLhs * rhs;
 
             logDelta_active = 0.5f*(log(invLhs) - log(sigmaSq(i-1)) + uhat*rhs) + log(pi(i-1));
-            logDelta_inactive = -0.5f * log(1.0/numSNP) + log(1.0f - pi(i-1));
+            logDelta_inactive = -0.5f * log((2*M_PI)/n_size) - beta(j)*beta(j)*n_size/2 + log(1.0f - pi(i-1));
             pi_current  = 1.0 / (1.0 + exp(logDelta_inactive - logDelta_active));
 
             delta = sample_bernoulli(pi_current);
@@ -305,9 +306,10 @@ int main() {
             }else{
                 numSnpDist_current(0) += 1;
                 
-                bhatcorr = bhatcorr.array() + LD.col(j).array()*beta_old; 
+                //bhatcorr = bhatcorr.array() + LD.col(j).array()*beta_old; 
 
-                beta(j) = sample_normal(0.0, sqrt(1/numSNP));
+                beta(j) = sample_normal(0.0, sqrt(1/n_size));
+                bhatcorr = bhatcorr.array() + LD.col(j).array()*(beta_old - beta(j));
             }
         }
         
@@ -335,8 +337,8 @@ int main() {
 
     }
 
-    saveMatrixToBinary("ldm_data1_diff_prior_result.bin", beta_mcmc);
-    writeVectorsToBinary("nnz_ssq_result1_diff_prior.bin", sigmaSq, nnz);
+    saveMatrixToBinary("ldm_data3_diff_prior_result.bin", beta_mcmc);
+    writeVectorsToBinary("nnz_ssq_result3_diff_prior.bin", sigmaSq, nnz);
 
     return 0;
 };
