@@ -11,7 +11,7 @@
 
 library(MCMCpack)
 
-sbayesr = function(b, se, n, R, niter = 10000, gamma = c(0, 1), startPi = c(0.9, 0.1), startH2 = 0.5){
+sbayesr = function(b, se, n, R, niter = 5000, gamma = c(0, 1), startPi = c(0.9, 0.1), startH2 = 0.2){
   m     = nrow(R)          # number of SNPs
   ndist = length(startPi)  # number of mixture distributions
   pi    = startPi          # starting value for pi
@@ -47,25 +47,12 @@ sbayesr = function(b, se, n, R, niter = 10000, gamma = c(0, 1), startPi = c(0.9,
       rhs = (bhatcorr[i] + oldSample)/(vare/n)
       invLhs = 1.0/(1/c(vare/n) + invSigmaSq)
       uhat = invLhs*c(rhs)
-      if (iter <= 2){
-        if (i <= 2){
-          print(iter)
-          print(rhs)
-          print(invLhs)
-          print(uhat)}
-        }
       
       # sampling mixture distribution membership
       logDelta = 0.5*(log(invLhs) - logSigmaSq + uhat*c(rhs)) + logPi
       logDelta[1] = logPi[1];
       for (k in 1:ndist) {
         probDelta[k] = 1.0/sum(exp(logDelta - logDelta[k]))
-      }
-      
-      if (iter <= 2){
-        if (i <= 2){
-          print(logDelta)
-          print(probDelta)}
       }
       
       delta = sample(1:ndist, 1, prob = probDelta)
@@ -91,8 +78,9 @@ sbayesr = function(b, se, n, R, niter = 10000, gamma = c(0, 1), startPi = c(0.9,
     sigmaSq = (ssq + nub*scaleb)/rchisq(1, nnz+nub)
     
     # compute genetic variance and heritability
-    bRb = crossprod(beta, (bhat-bhatcorr))
-    varg = bRb
+    beta_unscaled = beta / scale
+    varg = crossprod(beta_unscaled, (bhat - bhatcorr)/scale)
+    
     h2  = varg/vary
     
     keptIter <- rbind(keptIter,c(pi, nnz, sigmaSq, h2))
@@ -113,7 +101,7 @@ sbayesr = function(b, se, n, R, niter = 10000, gamma = c(0, 1), startPi = c(0.9,
 }
 
 
-set.seed(123)
+set.seed(1001)
 
 ## load genotype data (the first 1000 common SNPs on chromosome 22 in 1KPG data)
 #load("1000G_eur_chr22_1ksnp.RData")
@@ -144,11 +132,11 @@ set.seed(123)
 
 ## load SBayesR script
 #source("sbayesr.R")
-gwas_data <- read.table("GWASss.ma", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+gwas_data <- read.table("GWASss_data4.ma", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
 b <- gwas_data$b
 se <- gwas_data$se
 
-ldm <- read.table("ldm_data1.ma", sep = "\t", header = FALSE)
+ldm <- read.table("ldm_data4.ma", sep = "\t", header = FALSE)
 
 R <- as.matrix(ldm)
 
@@ -171,7 +159,7 @@ abline(h=0, a=0, b=1)
 
 # Save the posterior mean values as a .ma file
 write.table(betaMean, 
-            file = "betaMean_results.ma", 
+            file = "betaMean_results_data2.ma", 
             sep = "\t",           # Use tab-delimited format
             row.names = FALSE,    # Exclude row names
             col.names = FALSE,    # Exclude column names
@@ -179,7 +167,7 @@ write.table(betaMean,
 
 # Save the full MCMC samples of beta as a .ma file (optional)
 write.table(res$beta, 
-            file = "beta_mcmc_samples.ma", 
+            file = "beta_mcmc_samples_data2.ma", 
             sep = "\t", 
             row.names = FALSE, 
             col.names = FALSE, 
