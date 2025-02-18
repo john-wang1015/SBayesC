@@ -12,8 +12,8 @@
 using namespace Eigen;
 using namespace std;
 
-std::random_device rd;
-std::mt19937 rng(123);
+//std::random_device rd;
+//std::mt19937 rng(123);
 
 void readBinFullLD(const std::string& binFilePath, unsigned &numSNP, MatrixXf &B) {
     auto start = std::chrono::high_resolution_clock::now(); // Start timing
@@ -55,7 +55,7 @@ void readBinFullLD(const std::string& binFilePath, unsigned &numSNP, MatrixXf &B
 
 void readBinTxtFile(const std::string& binFilePath, unsigned& numSNP, Eigen::MatrixXf& B) {
     std::ifstream file(binFilePath);
-    if (!file.is_open()) {
+    if (!file.is_open()) { 
         std::cerr << "Error: Cannot open file " << binFilePath << std::endl;
         return;
     }
@@ -175,17 +175,88 @@ void saveMatrixToBinary(const std::string& filename, const Eigen::MatrixXf& matr
     file.close();
 }
 
-float sample_normal(float mean, float stddev) {
+void recoverMatrix(MatrixXf& B, VectorXf& b, VectorXf& se, VectorXf& n, unsigned numSNP, MatrixXf& XTX, VectorXf& XTy) {
+    unsigned n_size = numSNP;
+    VectorXf diagonalElements(n_size);
+
+    for (unsigned j = 0; j < n_size; ++j) {
+        diagonalElements[j] = 1.0f / (se[j] + (b[j] * b[j] / n[j]));
+    }
+
+    MatrixXf D = diagonalElements.asDiagonal();
+
+    VectorXf D_sqrt_vec = D.diagonal().cwiseSqrt();
+    DiagonalMatrix<float, Dynamic> D_sqrt(D_sqrt_vec);
+    XTX = D_sqrt * B * D_sqrt;
+
+    XTy = D.diagonal().cwiseProduct(b);
+}
+
+void writeVectorsToBinary(const std::string& filename,
+    const Eigen::VectorXf& sigmaSq,
+    const Eigen::VectorXd& nnz) {
+    std::ofstream file(filename, std::ios::binary);
+    if (!file) {
+        std::cerr << "Error opening file for writing: " << filename << std::endl;
+        return;
+    }
+
+    // Write size of sigmaSq
+    int sigmaSqSize = sigmaSq.size();
+    file.write(reinterpret_cast<const char*>(&sigmaSqSize), sizeof(int));
+
+    // Write data of sigmaSq
+    file.write(reinterpret_cast<const char*>(sigmaSq.data()), sigmaSqSize * sizeof(float));
+
+    // Write size of nnz
+    int nnzSize = nnz.size();
+    file.write(reinterpret_cast<const char*>(&nnzSize), sizeof(int));
+
+    // Write data of nnz
+    file.write(reinterpret_cast<const char*>(nnz.data()), nnzSize * sizeof(double));
+
+    file.close();
+}
+
+void savePosMean(const string& filename, const VectorXf& matrix) {
+    ofstream outFile(filename, ios::binary);
+    if (!outFile) {
+        cerr << "Error: Unable to open file " << filename << " for writing." << endl;
+        return;
+    }
+    int rows = matrix.size();
+    outFile.write(reinterpret_cast<const char*>(&rows), sizeof(int));
+    outFile.write(reinterpret_cast<const char*>(matrix.data()), rows * sizeof(float));
+    outFile.close();
+}
+
+// Sample from normal distribution
+float sample_normal(std::mt19937& rng, float mean, float stddev) {
     std::normal_distribution<float> norm_dist(mean, stddev);
     return norm_dist(rng);
 }
 
-float sample_chisq(float dof) {
+// Sample from uniform distribution (0,1)
+float sample_uniform(std::mt19937& rng) {
+    std::uniform_real_distribution<float> uniform_dist(0.0, 1.0);
+    return uniform_dist(rng);
+}
+
+// Sample from chi-squared distribution
+float sample_chisq(std::mt19937& rng, float dof) {
     std::chi_squared_distribution<float> chi_dist(dof);
     return chi_dist(rng);
 }
 
-float sample_beta(float alpha, float beta) {
+// Sample from scaled inverse chi-squared distribution
+float sample_scaled_inv_chi_squared(std::mt19937& rng, float dof, float scale) {
+    std::chi_squared_distribution<float> chi_dist(dof);
+    float x = chi_dist(rng);
+    return (dof * scale) / x;
+}
+
+// Sample from beta distribution
+float sample_beta(std::mt19937& rng, float alpha, float beta) {
     std::gamma_distribution<float> gamma_alpha(alpha, 1.0);
     std::gamma_distribution<float> gamma_beta(beta, 1.0);
     float x = gamma_alpha(rng);
@@ -193,120 +264,151 @@ float sample_beta(float alpha, float beta) {
     return x / (x + y);
 }
 
-float sample_bernoulli(float p) {
+// Sample from Bernoulli distribution
+float sample_bernoulli(std::mt19937& rng, float p) {
     std::discrete_distribution<int> dist({ 1 - p, p });
     return dist(rng);
 }
 
+int main(int argc, char* argv[]) {
+    cout << "Starting..." << endl;
 
-int main() {
+    if (argc < 7) {
+        cerr << "Usage: " << argv[0] << " <LD matrix file> <GWAS summary file> <output beta file> <output nnz file> <random_seed> <n_size> [n_iter] [pi_init] [hsq_init]" << endl;
+        return 1;
+    }
+
+    // Read input filenames
+    string binFilePath = argv[1];
+    string phenoFilePath = argv[2];
+    string outputBetaFile = argv[3];
+    string outputNnzFile = argv[4];
+
+    // Read numerical inputs
+    int random_seed = stoi(argv[5]);
+    float n_size = stof(argv[6]); // Convert to float (ensuring 1e4 = 10000.0)
+
+    // Optional hyperparameters
+    unsigned n_iter = (argc > 7) ? stoi(argv[7]) : 10000;
+    float pi_init = (argc > 8) ? stof(argv[8]) : 0.1;
+    float hsq_init = (argc > 9) ? stof(argv[9]) : 0.5;
+
+    // Set the random seed
+    mt19937 rng(random_seed);
+    cout << "Using random seed: " << random_seed << endl;
+    cout << "Using n_size: " << n_size << endl;
+
+    // Load data
     unsigned numSNP;
     VectorXf b, se, n;
     MatrixXf LD;
-
-    //std::string binFilePath = "1000G_eur_chr22.ldm.full.bin";
-    //std::string phenoFilePath = "sim_1.ma";
-    std::string binFilePath = "ldm_data1.ma";
-    std::string phenoFilePath = "GWASss.ma";
-
-    //readBinFullLD(binFilePath, numSNP, LD);
     readBinTxtFile(binFilePath, numSNP, LD);
-    readSummary(phenoFilePath, b, se, n ,numSNP);
+    LD = MatrixXf::Identity(numSNP, numSNP);
+    readSummary(phenoFilePath, b, se, n, numSNP);
 
-    unsigned n_iter = 10000;
-    float pi_init = 0.1;
-    float hsq_init = 0.5;
-
-    VectorXf pi = VectorXf::Zero(n_iter+1);               
-    VectorXf hsq = VectorXf::Zero(n_iter+1);          
-    pi(0) = pi_init; 
+    // Initialize parameters
+    VectorXf pi = VectorXf::Zero(n_iter + 1);
+    VectorXf hsq = VectorXf::Zero(n_iter + 1);
+    pi(0) = pi_init;
     hsq(0) = hsq_init;
 
-    VectorXf scale = (1.0 / (numSNP * se.array().square())).sqrt(); 
+    VectorXf scale = (1.0 / (numSNP * se.array().square())).sqrt();
     VectorXf bhat = b.array() * scale.array();
 
     float vary = 1.0;
     float varg = hsq(0);
     float vare = vary;
-    VectorXf sigmaSq = VectorXf::Zero(n_iter+1);
-    sigmaSq(0) = varg/(numSNP * pi(0));
+    VectorXf sigmaSq = VectorXf::Zero(n_iter + 1);
+    sigmaSq(0) = varg / (numSNP * pi(0));
 
     float nub = 4.0f, nue = 4.0f;
     float scaleb = (nub - 2) / nub * sigmaSq(0);
     float scalee = (nue - 2) / nue * vare;
 
     VectorXf beta = VectorXf::Zero(numSNP);
-    MatrixXf beta_mcmc = MatrixXf::Zero(n_iter+1, numSNP);
+    MatrixXf beta_mcmc = MatrixXf::Zero(n_iter + 1, numSNP);
     VectorXf bhatcorr = bhat;
 
     MatrixXf keptIter = MatrixXf::Zero(n_iter, 4);
-    float invSigmaSq,ssq;
     VectorXd nnz = VectorXd::Zero(n_iter);
-    float beta_old, rhs, invLhs, uhat;
-    float logDelta_active, logDelta_inactive, pi_current, delta;
-    float sigma_beta, sigma_epsilon;
-    
-    std::cout << std::left << std::setw(10) << "Iteration"
-         << std::left << std::setw(10) << "pi" 
-         << std::setw(10) << "nnz" 
-         << std::setw(15) << "sigma_beta" 
-         << std::setw(10) << "hsq" << std::endl;
-    
-    for (int i = 1; i < n_iter; i++){
-        invSigmaSq = 1.0 / sigmaSq(i-1);
-        ssq = 0;
+
+    cout << left << setw(10) << "Iteration"
+         << left << setw(10) << "pi"
+         << setw(10) << "nnz"
+         << setw(15) << "sigma_beta"
+         << setw(10) << "hsq" << endl;
+
+    for (int i = 1; i < n_iter; i++) {
+        float invSigmaSq = 1.0 / sigmaSq(i - 1);
+        float ssq = 0;
         VectorXf numSnpDist_current = VectorXf::Zero(2);
 
         for (int j = 0; j < numSNP; j++) {
-            beta_old = beta(j);
-            rhs = (bhatcorr(j) + beta_old) / (vare / numSNP);
-            invLhs = 1.0f / (1.0f / (vare / numSNP) + invSigmaSq);
-            uhat = invLhs * rhs;
+            float beta_old = beta(j);
+            float rhs = (bhatcorr(j) + beta_old) / (vare / numSNP);
+            float invLhs = 1.0f / (1.0f / (vare / numSNP) + invSigmaSq);
+            float uhat = invLhs * rhs;
 
-            logDelta_active = 0.5f*(log(invLhs) - log(sigmaSq(i-1)) + uhat*rhs) + log(pi(i-1));
-            logDelta_inactive = log(1.0f-pi(i-1)); 
-            pi_current  = 1.0 / (1.0 + exp(logDelta_inactive - logDelta_active));
+            float logDelta_active = 0.5f * (log(invLhs) - log(sigmaSq(i - 1)) + uhat * rhs) + log(pi(i - 1));
+            float logDelta_inactive = -0.5f * log((2 * M_PI) / n_size) - beta(j) * beta(j) * n_size / 2 + log(1.0f - pi(i - 1));
+            float pi_current = 1.0 / (1.0 + exp(logDelta_inactive - logDelta_active));
 
-            delta = sample_bernoulli(pi_current);
-            if (delta > 0){
+            float delta = sample_bernoulli(rng, pi_current);
+            if (delta > 0) {
                 numSnpDist_current(1) += 1;
-                beta(j) = sample_normal(uhat, sqrt(invLhs));
-                 
-                bhatcorr = bhatcorr.array() + LD.col(j).array()*(beta_old - beta(j));
-                ssq = ssq + (beta(j)*beta(j));
-                nnz(i-1) = nnz(i - 1) + 1;
-            }else{
+                beta(j) = sample_normal(rng, uhat, sqrt(invLhs));
+
+                bhatcorr += LD.col(j) * (beta_old - beta(j));
+                ssq += beta(j) * beta(j);
+                nnz(i - 1) += 1;
+            } else {
                 numSnpDist_current(0) += 1;
-                bhatcorr = bhatcorr.array() + LD.col(j).array()*beta_old;
-                beta(j) = 0.0;
+                beta(j) = sample_normal(rng, 0.0, sqrt(1 / n_size));
+                bhatcorr += LD.col(j) * (beta_old - beta(j));
             }
         }
-        
+
         VectorXf beta_mcmc_sample = beta.array() / scale.array();
         beta_mcmc.row(i) = beta_mcmc_sample.transpose();
 
-        pi(i) = sample_beta(numSnpDist_current(1), numSnpDist_current(0));
+        pi(i) = sample_beta(rng, numSnpDist_current(1), numSnpDist_current(0));
 
-        sigma_beta = sample_chisq(nnz(i-1) + nub);
-        sigmaSq(i) = (ssq + nub*scaleb)/sigma_beta;
+        float sigma_beta = sample_chisq(rng, nnz(i - 1) + nub);
+        sigmaSq(i) = (ssq + nub * scaleb) / sigma_beta;
 
-        varg = beta.dot(bhat - bhatcorr);
-        hsq(i) = varg /vary;
+        VectorXf scaled_bhat = (bhat - bhatcorr).array() / scale.array();
+        VectorXf beta_scale = beta.array() / scale.array();
+        varg = beta_scale.dot(scaled_bhat);
+        hsq(i) = varg / vary;
 
-        if (i % 500 == 0){
-        std::cout << std::fixed << std::setprecision(6);
-        std::cout << std::left << std::setw(10) << i
-            << std::left << std::setw(10) << pi(i) 
-            << std::setw(10) << int(nnz(i-1)) 
-            << std::setw(15) << sigmaSq(i) 
-            << std::setw(10) << hsq(i) << std::endl;
+        if (i % 500 == 0) {
+            cout << fixed << setprecision(6);
+            cout << left << setw(10) << i
+                 << left << setw(10) << pi(i)
+                 << setw(10) << int(nnz(i - 1))
+                 << setw(15) << sigmaSq(i)
+                 << setw(10) << hsq(i) << endl;
         }
 
-        keptIter.row(i-1) << pi(i), int(nnz(i-1)), sigmaSq(i), hsq(i);
-
+        keptIter.row(i - 1) << pi(i), int(nnz(i - 1)), sigmaSq(i), hsq(i);
     }
 
-    saveMatrixToBinary("ldm_data1_result.bin", beta_mcmc);
+    int start_row = 2000, end_row = 10000;
+    MatrixXf beta_mcmc_subset = beta_mcmc.block(start_row, 0, end_row - start_row + 1, numSNP);
+
+    // Compute column-wise mean (1000 × 1 vector)
+    VectorXf beta_posterior_mean = beta_mcmc_subset.colwise().mean();
+
+    // Save the posterior mean vector to a file
+    string outputPosteriorFile = outputBetaFile + "_posterior_mean.bin";
+    savePosMean(outputPosteriorFile, beta_posterior_mean);
+
+    cout << "Posterior mean computed and saved to: " << outputPosteriorFile << endl;
+
+    // Save output files
+    saveMatrixToBinary(outputBetaFile, beta_mcmc);
+    writeVectorsToBinary(outputNnzFile, sigmaSq, nnz);
 
     return 0;
-};
+}
+
