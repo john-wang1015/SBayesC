@@ -1,0 +1,19 @@
+Package: sparsevb
+Type: Package
+Title: Spike-and-Slab Variational Bayes for Linear and Logistic
+        Regression
+Version: 0.1.0
+Date: 2020-09-29
+Authors@R: c(person(c("Gabriel", "J."), "Clara", email = "gabriel.j.clara@gmail.com", role = c("aut", "cre")), person("Botond", "Szabo", role = "aut"), person("Kolyan", "Ray", role = "aut"))
+Author: Gabriel J. Clara [aut, cre], Botond Szabo [aut], Kolyan Ray [aut]
+Maintainer: Gabriel J. Clara <gabriel.j.clara@gmail.com>
+Description: Implements variational Bayesian algorithms to perform scalable variable selection for sparse, high-dimensional linear and logistic regression. Features include a novel prioritized updating scheme, which computes a preliminary estimator for the variational means during initialization and generates an update order prioritizing large coefficients. Sparsity is induced via spike-and-slab priors with either Laplace or Gaussian slabs. By default, the heavier-tailed Laplace density is used.
+BugReports: https://gitlab.com/gclara/varpack/-/issues
+License: GPL (>= 3)
+Imports: Rcpp (>= 1.0.5), selectiveInference (>= 1.2.5)
+LinkingTo: Rcpp, RcppArmadillo, RcppEnsmallen
+SystemRequirements: C++11
+Encoding: UTF-8
+RoxygenNote: 7.1.1
+NeedsCompilation: yes
+Packaged: 2020-10-06 15:40:22 UTC; gclara
